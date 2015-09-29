@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorNormal">#1959EE</color>
+    <color name="colorPressed">#2B60DB</color>
+    <color name="small">#ffffff</color>
+    <color name="smallPressed">#D8D8D9</color>
+</resources>
