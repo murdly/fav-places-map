@@ -12,6 +12,9 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.example.arkadiuszkarbowy.maps.places.PlacesActivity;
+import com.example.arkadiuszkarbowy.maps.search.SearchActivity;
+import com.github.clans.fab.FloatingActionButton;
+import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
@@ -23,22 +26,23 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-
 public class MapsActivity extends FragmentActivity {
     private static final String TAG = "MapsActivity";
     private GoogleMap mMap;
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
     private Activity mActivity;
+    private FloatingActionButton mSearch, mList, mPath;
+    private FloatingActionMenu mMenu;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mActivity = this;
-
         setContentView(R.layout.activity_maps);
         setUpMapIfNeeded();
         buildGoogleApiClient();
+        setUpFloatingButtons();
     }
 
     @Override
@@ -84,8 +88,6 @@ public class MapsActivity extends FragmentActivity {
 //        mMap.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Marker"));
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.setMyLocationEnabled(true);
-
-
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -98,8 +100,7 @@ public class MapsActivity extends FragmentActivity {
         mGoogleApiClient.connect();
     }
 
-    private GoogleApiClient.ConnectionCallbacks mConnectionCallbacks = new GoogleApiClient.ConnectionCallbacks
-            () {
+    private GoogleApiClient.ConnectionCallbacks mConnectionCallbacks = new GoogleApiClient.ConnectionCallbacks() {
         @Override
         public void onConnected(Bundle bundle) {
             Log.d(TAG, "onConnected");
@@ -109,8 +110,6 @@ public class MapsActivity extends FragmentActivity {
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(),
                         mLastLocation.getLongitude()), 15f));
             }
-
-            startActivity(new Intent(MapsActivity.this, PlacesActivity.class));
         }
 
         @Override
@@ -129,5 +128,35 @@ public class MapsActivity extends FragmentActivity {
         }
     };
 
+    private void setUpFloatingButtons() {
+        mMenu = (FloatingActionMenu) findViewById(R.id.fabMenu);
+        mSearch = (FloatingActionButton) findViewById(R.id.search);
+        mList = (FloatingActionButton) findViewById(R.id.list);
+        mPath = (FloatingActionButton) findViewById(R.id.path);
 
+        mSearch.setOnClickListener(mOnSearchListener);
+        mList.setOnClickListener(mOnListListener);
+        mPath.setOnClickListener(mOnPathListener);
+    }
+
+    private FloatingActionButton.OnClickListener mOnSearchListener = new FloatingActionButton.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            mMenu.close(true);
+            startActivity(new Intent(MapsActivity.this, SearchActivity.class));
+        }
+    };
+
+    private FloatingActionButton.OnClickListener mOnListListener = new FloatingActionButton.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            startActivity(new Intent(MapsActivity.this, PlacesActivity.class));
+        }
+    };
+
+    private FloatingActionButton.OnClickListener mOnPathListener = new FloatingActionButton.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+        }
+    };
 }

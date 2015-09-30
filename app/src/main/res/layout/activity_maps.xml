@@ -23,15 +23,15 @@
         android:orientation="vertical">
 
         <com.github.clans.fab.FloatingActionMenu
-            android:id="@+id/fab"
+            android:id="@+id/fabMenu"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             fab:menu_colorNormal="@color/colorNormal"
             fab:menu_colorPressed="@color/colorPressed"
-            app:menu_icon="@mipmap/ic_map_marker_circle_white_24dp">
+            app:menu_icon="@mipmap/ic_place_menu">
 
             <com.github.clans.fab.FloatingActionButton
-                android:id="@+id/fab2"
+                android:id="@+id/search"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|end"
@@ -44,7 +44,7 @@
                 />
 
             <com.github.clans.fab.FloatingActionButton
-                android:id="@+id/fab3"
+                android:id="@+id/list"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|end"
