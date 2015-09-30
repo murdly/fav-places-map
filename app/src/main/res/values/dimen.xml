@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="borderWidth">0dp</dimen>
+    <dimen name="primaryText">16sp</dimen>
+    <dimen name="secondaryText">14sp</dimen>
+    <dimen name="minorText">12sp</dimen>
+    <dimen name="tileHeight">88dp</dimen>
 </resources>

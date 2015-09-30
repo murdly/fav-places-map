@@ -1,6 +1,7 @@
 package com.example.arkadiuszkarbowy.maps;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.location.Location;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -10,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.example.arkadiuszkarbowy.maps.places.PlacesActivity;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
@@ -107,6 +109,8 @@ public class MapsActivity extends FragmentActivity {
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(),
                         mLastLocation.getLongitude()), 15f));
             }
+
+            startActivity(new Intent(MapsActivity.this, PlacesActivity.class));
         }
 
         @Override
