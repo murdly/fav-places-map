@@ -1,4 +1,4 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
              xmlns:tools="http://schemas.android.com/tools"
              android:layout_width="match_parent"
              android:layout_height="match_parent"
@@ -6,7 +6,8 @@
              android:paddingLeft="@dimen/activity_horizontal_margin"
              android:paddingRight="@dimen/activity_horizontal_margin"
              android:paddingTop="@dimen/activity_vertical_margin"
-             tools:context="com.example.arkadiuszkarbowy.maps.search.SearchActivity">
+             tools:context="com.example.arkadiuszkarbowy.maps.search.SearchActivity"
+    android:orientation="vertical">
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
@@ -16,7 +17,7 @@
         android:minHeight="56dp">
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="fill_parent"
             android:layout_height="fill_parent"
             android:gravity="center_vertical">
 
@@ -33,15 +34,25 @@
 
             <EditText
                 android:id="@+id/searchBox"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:layout_marginStart="8dp"
                 android:background="#00000000"
                 android:hint="@string/search"
-                android:singleLine="true">
+                android:singleLine="true"
+                android:maxLines="1">
 
                 <requestFocus/>
             </EditText>
         </LinearLayout>
     </android.support.design.widget.AppBarLayout>
-</FrameLayout>
+
+    <ListView
+        android:id="@+id/results"
+        android:layout_marginTop="16dp"
+        android:divider="@null"
+        android:background="@color/white"
+        android:elevation="4dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+</LinearLayout>

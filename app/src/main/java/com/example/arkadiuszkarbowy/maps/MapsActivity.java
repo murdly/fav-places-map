@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -28,6 +29,9 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 public class MapsActivity extends FragmentActivity {
     private static final String TAG = "MapsActivity";
+    public static final String LATITUDE = "latitude";
+    public static final String LONGITUDE = "longitude";
+
     private GoogleMap mMap;
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
@@ -143,7 +147,10 @@ public class MapsActivity extends FragmentActivity {
         @Override
         public void onClick(View v) {
             mMenu.close(true);
-            startActivity(new Intent(MapsActivity.this, SearchActivity.class));
+            Intent intent = new Intent(MapsActivity.this, SearchActivity.class);
+            intent.putExtra(LATITUDE, mLastLocation.getLatitude());
+            intent.putExtra(LONGITUDE, mLastLocation.getLongitude());
+            startActivity(intent);
         }
     };
 

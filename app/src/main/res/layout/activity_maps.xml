@@ -40,8 +40,7 @@
                 fab:fab_size="mini"
                 android:src="@mipmap/ic_place_search"
                 fab:fab_colorPressed="@color/smallPressed"
-                fab:fab_colorNormal="@color/small"
-                />
+                app:fab_colorNormal="@color/white"/>
 
             <com.github.clans.fab.FloatingActionButton
                 android:id="@+id/list"
@@ -51,9 +50,9 @@
                 android:layout_marginBottom="16dp"
                 android:layout_marginEnd="16dp"
                 android:src="@mipmap/ic_place_list"
-                fab:fab_colorNormal="@color/small"
                 fab:fab_colorPressed="@color/smallPressed"
-                fab:fab_size="mini"/>
+                fab:fab_size="mini"
+                app:fab_colorNormal="@color/white"/>
         </com.github.clans.fab.FloatingActionMenu>
 
         <com.github.clans.fab.FloatingActionButton

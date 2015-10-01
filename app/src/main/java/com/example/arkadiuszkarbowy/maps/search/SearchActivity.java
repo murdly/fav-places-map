@@ -1,85 +1,151 @@
 package com.example.arkadiuszkarbowy.maps.search;
 
-import android.content.Context;
+import android.app.Activity;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.KeyEvent;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.ListView;
+import android.widget.Toast;
 
+import com.example.arkadiuszkarbowy.maps.MapsActivity;
 import com.example.arkadiuszkarbowy.maps.R;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.places.AutocompletePrediction;
+import com.google.android.gms.location.places.Places;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+/**
+ * Created by arkadiuszkarbowy on 01/10/15.
+ */
 public class SearchActivity extends AppCompatActivity {
-
-    private ImageView mBack;
-    private EditText mSearchBox;
+    private static final String TAG = "SearchActivity";
+    private Activity mActivity;
+    private ListView mResults;
+    private List<AutocompletePrediction> mResultsList;
+    private GoogleApiClient mGoogleApiClient;
+    private AutocompleteAdapter mAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search);
+        mActivity = this;
 
-        mBack = (ImageView) findViewById(R.id.back);
-        mBack.setOnClickListener(mBackListener);
+        buildGoogleApiClient();
         setUpSearchBox();
+        setUpSearchResults();
     }
 
-    private void setUpSearchBox() {
-        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-        mSearchBox = (EditText) findViewById(R.id.searchBox);
-        mSearchBox.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_SEARCH ||
-                        actionId == EditorInfo.IME_ACTION_DONE ||
-                        actionId == EditorInfo.IME_ACTION_GO ||
-                        event.getAction() == KeyEvent.ACTION_DOWN &&
-                                event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+    private synchronized void buildGoogleApiClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .enableAutoManage(this, 0, mConnectionFailedCallback)
+                .addApi(Places.GEO_DATA_API)
+                .build();
 
-                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.hideSoftInputFromWindow(mSearchBox.getWindowToken(), 0);
-
-//                    new SearchClicked(mSearchBox.getText().toString()).execute();
-                    mSearchBox.setText("", TextView.BufferType.EDITABLE);
-                    return true;
-                }
-                return false;
-            }
-        });
+        mGoogleApiClient.connect();
     }
 
-    ImageView.OnClickListener mBackListener = new ImageView.OnClickListener() {
+    private GoogleApiClient.OnConnectionFailedListener mConnectionFailedCallback = new GoogleApiClient
+            .OnConnectionFailedListener() {
         @Override
-        public void onClick(View v) {
-            onBackPressed();
+        public void onConnectionFailed(ConnectionResult connectionResult) {
+            Log.d(TAG, "API connection failed");
+            Toast.makeText(mActivity, getResources().getString(R.string.no_connection), Toast.LENGTH_SHORT)
+                    .show();
         }
     };
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_search, menu);
-        return true;
+    private void setUpSearchBox() {
+        findViewById(R.id.back).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onBackPressed();
+            }
+        });
+
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        EditText mSearchBox = (EditText) findViewById(R.id.searchBox);
+        mSearchBox.addTextChangedListener(mTextWatcher);
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+    private TextWatcher mTextWatcher = new TextWatcher() {
+        @Override
+        public void onTextChanged(CharSequence query, int start, int before, int count) {
+            mAdapter.clear();
+            mResultsList.clear();
+            if (!query.toString().isEmpty()) {
+                search(query.toString());
+            }
         }
 
-        return super.onOptionsItemSelected(item);
+        private void search(String query){
+            try {
+                if (mGoogleApiClient.isConnected()) {
+                    SearchTask search = new SearchTask(mActivity, mGoogleApiClient);
+                    search.setBounds(buildBounds());
+                    AsyncTask<String, Void, List<AutocompletePrediction>> result = search.execute(query);
+
+                    if (result.get() != null)
+                        mResultsList.addAll(result.get());
+
+                    mAdapter.notifyDataSetChanged();
+                } else {
+                    Log.d(TAG, "API is not connected");
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+                Toast.makeText(mActivity, getResources().getString(R.string.no_connection), Toast.LENGTH_SHORT)
+                        .show();
+            }
+        }
+
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        }
+
+        @Override
+        public void afterTextChanged(Editable s) {
+        }
+    };
+
+    private LatLngBounds buildBounds() {
+        double lat = getIntent().getDoubleExtra(MapsActivity.LATITUDE, 1);
+        double lng = getIntent().getDoubleExtra(MapsActivity.LONGITUDE, 1);
+        return LatLngBounds.builder().include(new LatLng(lat, lng)).build();
     }
+
+    private void setUpSearchResults() {
+        mResults = (ListView) findViewById(R.id.results);
+        mResults.setOnItemClickListener(mResultClickListener);
+
+        mResultsList = new ArrayList<>();
+        mAdapter = new AutocompleteAdapter(mActivity, mResultsList);
+        mResults.setAdapter(mAdapter);
+    }
+
+
+    private ListView.OnItemClickListener mResultClickListener = new ListView.OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//            final AutocompletePrediction item = mAdapter.getItem(position);
+//            final String placeId = item.getPlaceId();
+
+
+        }
+    };
 }

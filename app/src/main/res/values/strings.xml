@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Mapsy</string>
+    <string name="app_name">Mapy</string>
     <string name="title_activity_maps">Mapy</string>
     <string name="no_connection">Brak połączenia</string>
     <string name="title_activity_places">Twoje miejsca</string>
