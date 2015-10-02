@@ -26,9 +26,9 @@
             android:id="@+id/fabMenu"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            app:menu_icon="@mipmap/ic_place_menu"
             fab:menu_colorNormal="@color/colorNormal"
-            fab:menu_colorPressed="@color/colorPressed"
-            app:menu_icon="@mipmap/ic_place_menu">
+            fab:menu_colorPressed="@color/colorPressed">
 
             <com.github.clans.fab.FloatingActionButton
                 android:id="@+id/search"
@@ -37,10 +37,10 @@
                 android:layout_gravity="bottom|end"
                 android:layout_marginBottom="16dp"
                 android:layout_marginEnd="16dp"
-                fab:fab_size="mini"
                 android:src="@mipmap/ic_place_search"
+                app:fab_colorNormal="@color/white"
                 fab:fab_colorPressed="@color/smallPressed"
-                app:fab_colorNormal="@color/white"/>
+                fab:fab_size="mini"/>
 
             <com.github.clans.fab.FloatingActionButton
                 android:id="@+id/list"
@@ -50,9 +50,9 @@
                 android:layout_marginBottom="16dp"
                 android:layout_marginEnd="16dp"
                 android:src="@mipmap/ic_place_list"
+                app:fab_colorNormal="@color/white"
                 fab:fab_colorPressed="@color/smallPressed"
-                fab:fab_size="mini"
-                app:fab_colorNormal="@color/white"/>
+                fab:fab_size="mini"/>
         </com.github.clans.fab.FloatingActionMenu>
 
         <com.github.clans.fab.FloatingActionButton
@@ -64,4 +64,18 @@
             fab:fab_colorPressed="@color/colorPressed"
             fab:fab_size="normal"/>
     </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/filter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="10dp"
+        android:background="#CCffffff"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="6dp"
+        android:src="@mipmap/ic_filter_on"
+        android:tag="off"/>
 </FrameLayout>

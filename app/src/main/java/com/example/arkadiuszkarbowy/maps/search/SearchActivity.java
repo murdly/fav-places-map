@@ -160,11 +160,9 @@ public class SearchActivity extends AppCompatActivity {
     private ListView.OnItemClickListener mResultClickListener = new ListView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
             final AutocompletePrediction item = mAdapter.getItem(position);
             final String placeId = item.getPlaceId();
 
-            Log.e(TAG, "mResultClickListener " + position + " id: " + placeId);
             PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi
                     .getPlaceById(mGoogleApiClient, placeId);
             placeResult.setResultCallback(mUpdatePlaceDetailsCallback);
