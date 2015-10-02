@@ -21,16 +21,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class SearchTask extends AsyncTask<String, Void, List<AutocompletePrediction>> {
     private static final String TAG = "SearchTask";
-    private Context mContext;
     private LatLngBounds mBounds;
     private GoogleApiClient mGoogleApiClient;
 
 
-    public SearchTask(Context context, GoogleApiClient googleApiClient) {
-        mContext = context;
+    public SearchTask(GoogleApiClient googleApiClient) {
         mGoogleApiClient = googleApiClient;
     }
-
 
     public void setBounds(LatLngBounds bounds) {
         mBounds = bounds;

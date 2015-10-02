@@ -1,24 +1,26 @@
 package com.example.arkadiuszkarbowy.maps.db;
 
+import android.util.Log;
+
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+
 /**
  * Created by arkadiuszkarbowy on 29/09/15.
  */
-public class Place {
+public class MyPlace {
     private long id;
+    private String apiId;
     private String title;
     private String address;
     private double latitude;
     private double longitude;
 
-    public Place(){
-
+    public MyPlace() {
     }
-    public Place(long id, String title, String address, double latitude, double longitude) {
-        this.id = id;
-        this.title = title;
-        this.address = address;
-        this.latitude = latitude;
-        this.longitude = longitude;
+
+    public String getApiId() {
+        return apiId;
     }
 
     public long getId() {
@@ -42,7 +44,19 @@ public class Place {
     }
 
     public String getLocationString() {
-        return latitude + ":" + longitude;
+        return "(" + latitude + ":" + longitude + ")";
+    }
+
+    public MarkerOptions getMarkerOptions() {
+        return new MarkerOptions().position(new LatLng(latitude, longitude)).title(title);
+    }
+
+    public LatLng getLatLng() {
+        return new LatLng(latitude, longitude);
+    }
+
+    public void setApiId(String apiId) {
+        this.apiId = apiId;
     }
 
     public void setId(long id) {
@@ -54,7 +68,15 @@ public class Place {
     }
 
     public void setAddress(String address) {
-        this.address = address;
+        this.address = cutTitleFrom(address);
+    }
+
+    private String cutTitleFrom(String address) {
+        if (address.contains(title)) {
+            int start = address.indexOf(",");
+            if (start != -1) return address.substring(++start).trim();
+        }
+        return address;
     }
 
     public void setLatitude(double latitude) {

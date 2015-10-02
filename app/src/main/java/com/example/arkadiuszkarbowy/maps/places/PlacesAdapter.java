@@ -10,7 +10,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.arkadiuszkarbowy.maps.R;
-import com.example.arkadiuszkarbowy.maps.db.Place;
+import com.example.arkadiuszkarbowy.maps.db.MyPlace;
 
 import java.util.List;
 
@@ -21,26 +21,32 @@ public class PlacesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     private static final int EMPTY_STATE_VIEW = 0;
     private static final int CONTENT_VIEW = 1;
     private Context mContext;
-    private List<Place> mPlaces;
-    private ViewHolder.OnRecyclerItemClickListener mItemListener;
-    private EmptyViewHolder.OnRecyclerEmptyStateClickListener mEmptyListener;
+    private List<MyPlace> mMyPlaces;
+    private OnRecyclerInteractionListener mFragmentListener;
 
-    public PlacesAdapter(Context context, List<Place> places, ViewHolder.OnRecyclerItemClickListener
-            listener, EmptyViewHolder.OnRecyclerEmptyStateClickListener emptyListener) {
+    public PlacesAdapter(Context context, List<MyPlace> myPlaces, OnRecyclerInteractionListener listener) {
         mContext = context;
-        mPlaces = places;
-        mItemListener = listener;
-        mEmptyListener = emptyListener;
+        mMyPlaces = myPlaces;
+        mFragmentListener = listener;
+    }
+
+    public interface OnRecyclerInteractionListener {
+        void onEmptyStateClicked();
+
+        void onItemClicked(int pos);
+
+        void onItemDeleteClicked(long id);
     }
 
     @Override
     public int getItemViewType(int position) {
-        return mPlaces.isEmpty() ? EMPTY_STATE_VIEW : CONTENT_VIEW;
+        return mMyPlaces.isEmpty() ? EMPTY_STATE_VIEW : CONTENT_VIEW;
     }
 
-    public static class EmptyViewHolder extends RecyclerView.ViewHolder implements  View.OnClickListener{
-        private OnRecyclerEmptyStateClickListener mListener;
-        public EmptyViewHolder(View v, OnRecyclerEmptyStateClickListener listener) {
+    public static class EmptyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+        private OnRecyclerInteractionListener mListener;
+
+        public EmptyViewHolder(View v, OnRecyclerInteractionListener listener) {
             super(v);
             mListener = listener;
             v.setOnClickListener(this);
@@ -48,11 +54,7 @@ public class PlacesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
         @Override
         public void onClick(View v) {
-            mListener.onAddPlaceClicked();
-        }
-
-        public interface OnRecyclerEmptyStateClickListener {
-            void onAddPlaceClicked();
+            mListener.onEmptyStateClicked();
         }
     }
 
@@ -61,9 +63,9 @@ public class PlacesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         private TextView mAddress;
         private TextView mLocation;
         private ImageView mDelete;
-        private OnRecyclerItemClickListener mListener;
+        private OnRecyclerInteractionListener mListener;
 
-        public ViewHolder(View v, OnRecyclerItemClickListener listener) {
+        public ViewHolder(View v, OnRecyclerInteractionListener listener) {
             super(v);
             v.setOnClickListener(this);
             mListener = listener;
@@ -75,32 +77,27 @@ public class PlacesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
         @Override
         public void onClick(View v) {
-            mListener.onItemClicked(v, this.getAdapterPosition());
-        }
-
-        public interface OnRecyclerItemClickListener {
-            void onItemClicked(View view, int pos);
+            mListener.onItemClicked(this.getAdapterPosition());
         }
     }
-
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
         if (viewType == EMPTY_STATE_VIEW) {
             View view = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.empty_places,
                     viewGroup, false);
-            return new EmptyViewHolder(view, mEmptyListener);
+            return new EmptyViewHolder(view, mFragmentListener);
         }
         View view = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.places_item,
                 viewGroup, false);
-        return new ViewHolder(view, mItemListener);
+        return new ViewHolder(view, mFragmentListener);
     }
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder vh, final int position) {
         if (vh instanceof ViewHolder) {
             ViewHolder holder = (ViewHolder) vh;
-            Place place = mPlaces.get(position);
+            final MyPlace place = mMyPlaces.get(position);
             holder.mTitle.setText(place.getTitle());
             holder.mAddress.setText(place.getAddress());
             holder.mLocation.setText(place.getLocationString());
@@ -108,20 +105,27 @@ public class PlacesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 @Override
                 public void onClick(View v) {
                     Log.d("Places Adapter", position + " delete");
+                    mFragmentListener.onItemDeleteClicked(place.getId());
+                    removeAt(position);
                 }
             });
-        }
-        else{
+        } else {
             Log.d("Places Adapter", "empty state");
         }
     }
 
     @Override
     public int getItemCount() {
-        return !mPlaces.isEmpty() ? mPlaces.size() : emptyStateCount();
+        return !mMyPlaces.isEmpty() ? mMyPlaces.size() : emptyStateCount();
     }
 
     private int emptyStateCount() {
         return 1;
+    }
+
+    private void removeAt(int position){
+        mMyPlaces.remove(position);
+        notifyItemRemoved(position);
+        notifyItemRangeChanged(position, mMyPlaces.size());
     }
 }

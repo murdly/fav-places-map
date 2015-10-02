@@ -11,17 +11,19 @@ import android.util.Log;
 public class SQLiteHelper extends SQLiteOpenHelper {
     public static final String TABLE_PLACES = "places";
     public static final String COLUMN_ID = "_id";
+    public static final String COLUMN_API_ID = "apiId";
     public static final String COLUMN_TITLE = "title";
     public static final String COLUMN_ADDRESS = "address";
     public static final String COLUMN_LATITUDE = "latitude";
     public static final String COLUMN_LONGITUDE = "longitude";
 
     private static final String DATABASE_NAME = "places.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     private static final String DATABASE_CREATE = "create table "
             + TABLE_PLACES + "(" + COLUMN_ID
-            + " integer primary key autoincrement, " + COLUMN_TITLE
+            + " integer primary key autoincrement, " + COLUMN_API_ID
+            + " text not null, " + COLUMN_TITLE
             + " text not null, " + COLUMN_ADDRESS + " text not null, " + COLUMN_LATITUDE + " real, "
             + COLUMN_LONGITUDE + " real" + ");";
 

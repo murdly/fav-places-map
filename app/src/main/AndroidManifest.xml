@@ -26,7 +26,7 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name=".MapsActivity"
+            android:name=".map.MapsActivity"
             android:label="@string/title_activity_maps" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -37,7 +37,7 @@
         <activity
             android:name=".places.PlacesActivity"
             android:label="@string/title_activity_places"
-            android:parentActivityName=".MapsActivity">
+            android:parentActivityName=".map.MapsActivity">
         </activity>
         <activity
             android:name=".search.SearchActivity"

@@ -6,10 +6,9 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 
-import com.example.arkadiuszkarbowy.maps.db.Place;
-import com.example.arkadiuszkarbowy.maps.db.PlacesDataSource;
+import com.example.arkadiuszkarbowy.maps.db.DatabaseManager;
+import com.example.arkadiuszkarbowy.maps.db.MyPlace;
 
-import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -17,16 +16,16 @@ import java.util.List;
  */
 public class PlacesController {
     private Context mContext;
-    private PlacesDataSource mDataSource;
+    private DatabaseManager mDataSource;
     private RecyclerView mView;
     private PlacesActivityFragment mListener;
+    private PlacesAdapter mAdapter;
+    private List<MyPlace> mPlaces;
 
-    public PlacesController(Context context, PlacesDataSource mDataSource, View mView) {
+    public PlacesController(Context context, DatabaseManager mDataSource, View mView) {
         mContext = context;
         this.mDataSource = mDataSource;
         this.mView = (RecyclerView) mView;
-
-
     }
 
     public void setOnViewClickListener(PlacesActivityFragment listener) {
@@ -37,16 +36,20 @@ public class PlacesController {
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(mContext);
         mView.setLayoutManager(mLayoutManager);
 
-        try {
-            mDataSource.open();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        List<Place> places = mDataSource.getAllPlaces();
+        mDataSource.open();
+        mPlaces = mDataSource.getAllMyPlaces();
         mDataSource.close();
-        places.add(new Place(2, "a", "b" , 3, 3));
-        mView.setAdapter(new PlacesAdapter(mContext, places, mListener, mListener));
-        Log.d("PlacesController", "adapter is set");
+        mAdapter = new PlacesAdapter(mContext, mPlaces, mListener);
+        mView.setAdapter(mAdapter);
+    }
 
+    public void deleteItem(long id) {
+        mDataSource.open();
+        mDataSource.deleteMyPlaceById(id);
+        mDataSource.close();
+    }
+
+    public MyPlace getPlace(int pos) {
+        return mPlaces.get(pos);
     }
 }

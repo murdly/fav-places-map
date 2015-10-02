@@ -11,7 +11,8 @@ import android.view.MenuItem;
 import com.example.arkadiuszkarbowy.maps.R;
 
 public class PlacesActivity extends AppCompatActivity {
-
+    public static final int REQUEST_PLACES = 2;
+    public static final int RESULT_GOTO_MARKER = 22;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
