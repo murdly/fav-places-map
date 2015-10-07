@@ -16,7 +16,7 @@ public class FilterDialog extends DialogFragment {
     public static final int FILTER_RADIUS_1000m = 1000;
     public static final int FILTER_RADIUS_2000m = 2000;
     public static final int FILTER_RADIUS_5000m = 5000;
-    public static final int FILTER_RADIUS_DEFAULT = -1;
+    public static final int FILTER_RADIUS_DISABLED = -1;
 
    private DialogInterface.OnClickListener mOnFilterListener;
 

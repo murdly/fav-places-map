@@ -3,13 +3,17 @@ package com.example.arkadiuszkarbowy.maps.map;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.location.Address;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import com.example.arkadiuszkarbowy.maps.R;
 import com.example.arkadiuszkarbowy.maps.db.DatabaseManager;
 import com.example.arkadiuszkarbowy.maps.db.MyPlace;
+import com.example.arkadiuszkarbowy.maps.search.GeocoderTask;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -20,11 +24,14 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.maps.android.SphericalUtil;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Created by arkadiuszkarbowy on 02/10/15.
  */
 public class MapController {
+    private static final String TAG = "MapController";
+
     public static final String FILTER_RADIUS = "filter_radius";
     private static final double EARTH_CENTER_LATITUDE = 34.513299;
     private static final double EARTH_CENTER_LONGITUDE = -94.1628807;
@@ -34,7 +41,7 @@ public class MapController {
     private FloatingActionButton mSearch, mList, mPath;
     private FloatingActionMenu mMenu;
     private ImageButton mFilter;
-    private int mFilterRadius = FilterDialog.FILTER_RADIUS_DEFAULT;
+    private int mFilterRadius = FilterDialog.FILTER_RADIUS_DISABLED;
     private FragmentActivity mActivity;
 
     public MapController(FragmentActivity activity, DatabaseManager dataSource) {
@@ -65,19 +72,20 @@ public class MapController {
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.getUiSettings().setCompassEnabled(false);
         mMap.setMyLocationEnabled(true);
+        mMap.setOnMapLongClickListener(new MarkerTitleListener());
     }
 
     public void invalidateMarkers() {
-        if (mFilterRadius != -1) {
+        boolean filter = mFilterRadius != FilterDialog.FILTER_RADIUS_DISABLED;
+        if (filter)
             mFilter.setImageResource(R.mipmap.ic_filter_on);
-            addMarkersIfAny(true);
-        } else {
+         else
             mFilter.setImageResource(R.mipmap.ic_filter_outline);
-            addMarkersIfAny(false);
-        }
-    }
 
+        addMarkersIfAny(filter);
+    }
     private void addMarkersIfAny(boolean filter) {
+
         mMap.clear();
         mDataSource.open();
         List<MyPlace> places = mDataSource.getAllMyPlaces();
@@ -128,7 +136,6 @@ public class MapController {
         mDataSource.close();
         mMap.addMarker(place.getMarkerOptions());
         moveCamera(place.getLatLng());
-
     }
 
     public int getFilterRadius() {
@@ -137,6 +144,32 @@ public class MapController {
 
     public void setFilterRadius(int filterRadius) {
         mFilterRadius = filterRadius;
+    }
+
+    public class MarkerTitleListener implements GoogleMap.OnMapLongClickListener, MarkerTitleDialog.TitleListener {
+        private LatLng latLng;
+
+        @Override
+        public void onMapLongClick(LatLng latLng) {
+            this.latLng = latLng;
+            MarkerTitleDialog.newInstance(this).show(mActivity.getFragmentManager(),
+                    mActivity.getResources().getString(R.string.set_name));
+        }
+
+        @Override
+        public void onResult(String title) {
+            try {
+                List<Address> result = new GeocoderTask(mActivity).execute(latLng).get();
+                mDataSource.open();
+                long id = mDataSource.createMyPlaceFrom(result.get(0), title);
+                mDataSource.close();
+                addMarker(id);
+            } catch (InterruptedException | ExecutionException e) {
+                Log.e(TAG, e.toString());
+                Toast.makeText(mActivity, mActivity.getResources().getString(R.string.smh_wrong), Toast
+                        .LENGTH_SHORT).show();
+            }
+        }
     }
 
     public class FilterListener implements View.OnClickListener {
@@ -154,7 +187,7 @@ public class MapController {
                 else if (filter.equals(mActivity.getString(R.string.m5000)))
                     mFilterRadius = FilterDialog.FILTER_RADIUS_5000m;
                 else if (filter.equals(mActivity.getString(R.string.world)))
-                    mFilterRadius = FilterDialog.FILTER_RADIUS_DEFAULT;
+                    mFilterRadius = FilterDialog.FILTER_RADIUS_DISABLED;
 
                 invalidateMarkers();
             }

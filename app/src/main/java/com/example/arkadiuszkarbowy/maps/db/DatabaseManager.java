@@ -4,6 +4,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.location.Address;
 
 import com.google.android.gms.location.places.Place;
 
@@ -72,6 +73,27 @@ public class DatabaseManager {
         return insertId;
     }
 
+    public long createMyPlaceFrom(Address address, String title) {
+        ContentValues values = new ContentValues();
+        values.put(SQLiteHelper.COLUMN_API_ID, -1);
+        values.put(SQLiteHelper.COLUMN_TITLE, title);
+        String fullAddress = buildFullFrom(address);
+        values.put(SQLiteHelper.COLUMN_ADDRESS, fullAddress);
+        values.put(SQLiteHelper.COLUMN_LATITUDE, address.getLatitude());
+        values.put(SQLiteHelper.COLUMN_LONGITUDE, address.getLongitude());
+        long insertId = mDatabase.insert(SQLiteHelper.TABLE_PLACES, null,
+                values);
+        mDatabase.query(SQLiteHelper.TABLE_PLACES,
+                allColumns, SQLiteHelper.COLUMN_ID + " = " + insertId, null,
+                null, null, null);
+        return insertId;
+    }
+
+    private String buildFullFrom(Address address) {
+        return String.format("%s %s, %s, %s", address.getThoroughfare(), address.getSubThoroughfare(),
+                address.getLocality(), address.getCountryName());
+    }
+
     public List<MyPlace> getAllMyPlaces() {
         List<MyPlace> places = new ArrayList<>();
 
@@ -114,4 +136,6 @@ public class DatabaseManager {
         mDatabase.delete(SQLiteHelper.TABLE_PLACES, SQLiteHelper.COLUMN_ID
                 + " = " + id, null);
     }
+
+
 }

@@ -14,6 +14,10 @@
     <string name="m2000">2km</string>
     <string name="m5000">5km</string>
     <string name="world">cały świat</string>
+    <string name="smh_wrong">Cos poszło nie tak :D</string>
+    <string name="set_name">Wprowadź nazwę</string>
+    <string name="cancel">Anuluj</string>
+    <string name="ok">Ok</string>
     <string-array name="filter_values">
         <item>@string/m500</item>
         <item>@string/m1000</item>

@@ -1,7 +1,5 @@
 package com.example.arkadiuszkarbowy.maps.db;
 
-import android.util.Log;
-
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 

@@ -12,6 +12,7 @@ import com.google.android.gms.common.data.DataBufferUtils;
 import com.google.android.gms.location.places.AutocompletePrediction;
 import com.google.android.gms.location.places.AutocompletePredictionBuffer;
 import com.google.android.gms.location.places.Places;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 
 import java.util.ArrayList;
@@ -22,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by arkadiuszkarbowy on 30/09/15.
  */
-public class GeocoderTask extends AsyncTask<String, Void, List<Address>> {
+public class GeocoderTask extends AsyncTask<LatLng, Void, List<Address>> {
     private static final String TAG = "GeocoderTask";
     private Context mContext;
 
@@ -32,21 +33,18 @@ public class GeocoderTask extends AsyncTask<String, Void, List<Address>> {
     }
 
     @Override
-    protected List<Address> doInBackground(String... params) {
+    protected List<Address> doInBackground(LatLng... params) {
         List<Address> results;
         try {
-            Geocoder geocoder = new Geocoder(mContext, Locale.ENGLISH);
-            results = geocoder.getFromLocationName(params[0], 1);
+            Locale locale = mContext.getResources().getConfiguration().locale;
+            Geocoder geocoder = new Geocoder(mContext, locale);
+            results = geocoder.getFromLocation(params[0].latitude, params[0].longitude, 1);
 
             if (results.size() == 0) {
                 return null;
             }
-
-//            address = results.get(0);
-//            GeoPoint p = new GeoPoint((int) (address.getLatitude() * 1E6), (int) (address.getLongitude() * 1E6))
-
         } catch (Exception e) {
-            Log.e("", "Something went wrong: ", e);
+            Log.e(TAG, e.toString());
             return null;
         }
         return results;

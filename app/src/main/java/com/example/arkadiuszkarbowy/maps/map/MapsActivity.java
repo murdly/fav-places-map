@@ -43,7 +43,7 @@ public class MapsActivity extends FragmentActivity {
         buildGoogleApiClient();
         mMapController.initViews();
         mMapController.setFabListeners(mOnSearchListener, mOnListListener, mOnPathListener);
-        
+
         if(savedInstanceState != null)
              mMapController.setFilterRadius(savedInstanceState.getInt(MapController.FILTER_RADIUS));
     }
