@@ -76,6 +76,5 @@
         android:clickable="true"
         android:focusable="true"
         android:padding="6dp"
-        android:src="@mipmap/ic_filter_on"
-        android:tag="off"/>
+        android:src="@mipmap/ic_filter_outline"/>
 </FrameLayout>

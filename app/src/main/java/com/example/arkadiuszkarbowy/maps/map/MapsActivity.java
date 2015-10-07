@@ -20,15 +20,12 @@ import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
 
 public class MapsActivity extends FragmentActivity {
     private static final String TAG = "MapsActivity";
     public static final String LATITUDE = "com.ak.lat";
-    public static final String LONGITUDE = "com.al.lon";
+    public static final String LONGITUDE = "com.ak.lon";
 
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
@@ -45,13 +42,22 @@ public class MapsActivity extends FragmentActivity {
         mMapController = new MapController(this, DatabaseManager.getInstance());
         buildGoogleApiClient();
         mMapController.initViews();
-        mMapController.setListeners(mOnSearchListener, mOnListListener, mOnPathListener);
+        mMapController.setFabListeners(mOnSearchListener, mOnListListener, mOnPathListener);
+        
+        if(savedInstanceState != null)
+             mMapController.setFilterRadius(savedInstanceState.getInt(MapController.FILTER_RADIUS));
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putInt(MapController.FILTER_RADIUS, mMapController.getFilterRadius());
+        super.onSaveInstanceState(outState);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        mMapController.addMarkersIfAny(false);
+        mMapController.invalidateMarkers();
         mMapController.setUpMapIfNeeded();
     }
 
@@ -69,9 +75,7 @@ public class MapsActivity extends FragmentActivity {
         @Override
         public void onConnected(Bundle bundle) {
             Log.d(TAG, "onConnected");
-//            obtainLastLocation();
-            mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
-                    mGoogleApiClient);
+            obtainLastLocation();
             if (mLastLocation != null) {
                 mMapController.moveCamera(new LatLng(mLastLocation.getLatitude(),
                         mLastLocation.getLongitude()));

@@ -1,5 +1,8 @@
 package com.example.arkadiuszkarbowy.maps.map;
 
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.support.v4.app.FragmentActivity;
 import android.view.View;
 import android.widget.ImageButton;
@@ -22,12 +25,16 @@ import java.util.List;
  * Created by arkadiuszkarbowy on 02/10/15.
  */
 public class MapController {
-    private static final int FILTER_RADIUS = 1000;
+    public static final String FILTER_RADIUS = "filter_radius";
+    private static final double EARTH_CENTER_LATITUDE = 34.513299;
+    private static final double EARTH_CENTER_LONGITUDE = -94.1628807;
+
     private DatabaseManager mDataSource;
     private GoogleMap mMap;
     private FloatingActionButton mSearch, mList, mPath;
     private FloatingActionMenu mMenu;
     private ImageButton mFilter;
+    private int mFilterRadius = FilterDialog.FILTER_RADIUS_DEFAULT;
     private FragmentActivity mActivity;
 
     public MapController(FragmentActivity activity, DatabaseManager dataSource) {
@@ -41,25 +48,10 @@ public class MapController {
         mList = (FloatingActionButton) mActivity.findViewById(R.id.list);
         mPath = (FloatingActionButton) mActivity.findViewById(R.id.path);
         mFilter = (ImageButton) mActivity.findViewById(R.id.filter);
-        mFilter.setOnClickListener(mOnFilterListener);
+        mFilter.setOnClickListener(new FilterListener());
 
         setUpMapIfNeeded();
     }
-
-    private View.OnClickListener mOnFilterListener = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            if (mFilter.getTag().equals(mActivity.getResources().getString(R.string.off))) {
-                mFilter.setTag(mActivity.getResources().getString(R.string.on));
-                mFilter.setImageResource(R.mipmap.ic_filter_off);
-                addMarkersIfAny(true);
-            } else {
-                mFilter.setTag(mActivity.getResources().getString(R.string.off));
-                mFilter.setImageResource(R.mipmap.ic_filter_on);
-                addMarkersIfAny(false);
-            }
-        }
-    };
 
     public void setUpMapIfNeeded() {
         if (mMap == null) {
@@ -75,7 +67,17 @@ public class MapController {
         mMap.setMyLocationEnabled(true);
     }
 
-    public void addMarkersIfAny(boolean filter) {
+    public void invalidateMarkers() {
+        if (mFilterRadius != -1) {
+            mFilter.setImageResource(R.mipmap.ic_filter_on);
+            addMarkersIfAny(true);
+        } else {
+            mFilter.setImageResource(R.mipmap.ic_filter_outline);
+            addMarkersIfAny(false);
+        }
+    }
+
+    private void addMarkersIfAny(boolean filter) {
         mMap.clear();
         mDataSource.open();
         List<MyPlace> places = mDataSource.getAllMyPlaces();
@@ -86,11 +88,29 @@ public class MapController {
         }
     }
 
+    private boolean outOfBounds(LatLng point) {
+        LatLng center = getLastObtainedLocation();
+        LatLngBounds circle = new LatLngBounds.Builder().
+                include(SphericalUtil.computeOffset(center, mFilterRadius, 0)).
+                include(SphericalUtil.computeOffset(center, mFilterRadius, 90)).
+                include(SphericalUtil.computeOffset(center, mFilterRadius, 180)).
+                include(SphericalUtil.computeOffset(center, mFilterRadius, 270)).build();
+
+        return !circle.contains(point);
+    }
+
+    private LatLng getLastObtainedLocation() {
+        SharedPreferences sharedPref = mActivity.getPreferences(Context.MODE_PRIVATE);
+        float lat = sharedPref.getFloat(MapsActivity.LATITUDE, (float) EARTH_CENTER_LATITUDE);
+        float lon = sharedPref.getFloat(MapsActivity.LONGITUDE, (float) EARTH_CENTER_LONGITUDE);
+        return new LatLng(lat, lon);
+    }
+
     public void closeMenu() {
         mMenu.close(true);
     }
 
-    public void setListeners(FloatingActionButton.OnClickListener mOnSearchListener, FloatingActionButton
+    public void setFabListeners(FloatingActionButton.OnClickListener mOnSearchListener, FloatingActionButton
             .OnClickListener mOnListListener, FloatingActionButton.OnClickListener mOnPathListener) {
 
         mSearch.setOnClickListener(mOnSearchListener);
@@ -111,14 +131,39 @@ public class MapController {
 
     }
 
-    private boolean outOfBounds(LatLng point) {
-        LatLng center = new LatLng(51.107885, 17.038538);
-        LatLngBounds circle = new LatLngBounds.Builder().
-                include(SphericalUtil.computeOffset(center, FILTER_RADIUS, 0)).
-                include(SphericalUtil.computeOffset(center, FILTER_RADIUS, 90)).
-                include(SphericalUtil.computeOffset(center, FILTER_RADIUS, 180)).
-                include(SphericalUtil.computeOffset(center, FILTER_RADIUS, 270)).build();
+    public int getFilterRadius() {
+        return mFilterRadius;
+    }
 
-        return !circle.contains(point);
+    public void setFilterRadius(int filterRadius) {
+        mFilterRadius = filterRadius;
+    }
+
+    public class FilterListener implements View.OnClickListener {
+        private DialogInterface.OnClickListener mFilterListener = new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String[] values = mActivity.getResources().getStringArray(R.array.filter_values);
+                String filter = values[which];
+                if (filter.equals(mActivity.getString(R.string.m500)))
+                    mFilterRadius = FilterDialog.FILTER_RADIUS_500m;
+                else if (filter.equals(mActivity.getString(R.string.m1000)))
+                    mFilterRadius = FilterDialog.FILTER_RADIUS_1000m;
+                else if (filter.equals(mActivity.getString(R.string.m2000)))
+                    mFilterRadius = FilterDialog.FILTER_RADIUS_2000m;
+                else if (filter.equals(mActivity.getString(R.string.m5000)))
+                    mFilterRadius = FilterDialog.FILTER_RADIUS_5000m;
+                else if (filter.equals(mActivity.getString(R.string.world)))
+                    mFilterRadius = FilterDialog.FILTER_RADIUS_DEFAULT;
+
+                invalidateMarkers();
+            }
+        };
+
+        @Override
+        public void onClick(View v) {
+            FilterDialog.newInstance(mFilterListener).show(mActivity.getFragmentManager(), mActivity
+                    .getString(R.string.filter_value));
+        }
     }
 }

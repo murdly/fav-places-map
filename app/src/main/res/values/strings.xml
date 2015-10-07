@@ -8,6 +8,17 @@
     <string name="title_activity_search">SearchActivity</string>
 
     <string name="search">Wyszukaj miejsce</string>
-    <string name="on">on</string>
-    <string name="off">off</string>
+    <string name="filter_value">Wybierz maksymalną odległość</string>
+    <string name="m500">500m</string>
+    <string name="m1000">1km</string>
+    <string name="m2000">2km</string>
+    <string name="m5000">5km</string>
+    <string name="world">cały świat</string>
+    <string-array name="filter_values">
+        <item>@string/m500</item>
+        <item>@string/m1000</item>
+        <item>@string/m2000</item>
+        <item>@string/m5000</item>
+        <item>@string/world</item>
+    </string-array>
 </resources>

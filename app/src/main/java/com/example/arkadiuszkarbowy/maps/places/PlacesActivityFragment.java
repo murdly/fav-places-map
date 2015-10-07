@@ -36,7 +36,6 @@ public class PlacesActivityFragment extends Fragment implements PlacesAdapter.On
 
     @Override
     public void onItemClicked(int pos) {
-        Log.d("PlacesActivityFragment", pos + " clicked");
         Intent markerData = new Intent();
         MyPlace place = mController.getPlace(pos);
         markerData.putExtra(MapsActivity.LATITUDE, place.getLatitude());

@@ -40,7 +40,6 @@ public class SearchTask extends AsyncTask<String, Void, List<AutocompletePredict
 
     private ArrayList<AutocompletePrediction> getAutocomplete(CharSequence query) {
         if (mGoogleApiClient.isConnected()) {
-            Log.i(TAG, "Autocomplete for: " + query);
 
             PendingResult<AutocompletePredictionBuffer> results = Places.GeoDataApi
                     .getAutocompletePredictions(mGoogleApiClient, query.toString(),
@@ -51,7 +50,7 @@ public class SearchTask extends AsyncTask<String, Void, List<AutocompletePredict
 
             final com.google.android.gms.common.api.Status status = autocompletePredictions.getStatus();
             if (!status.isSuccess()) {
-                Log.e(TAG, "Call error status: " + status.toString());
+                Log.e(TAG, "error: " + status.toString());
                 autocompletePredictions.release();
                 return null;
             }
