@@ -83,7 +83,6 @@ public class MapController {
     }
 
     public void setUpMapIfNeeded() {
-        Log.d(TAG, "setUpMapIfNeeded");
         if (mMap == null) {
             mMap = ((SupportMapFragment) mActivity.getSupportFragmentManager().findFragmentById(R.id.map))
                     .getMap();
@@ -99,7 +98,6 @@ public class MapController {
     }
 
     public void invalidateMarkers() {
-        Log.d(TAG, "invalidateMarkers");
         boolean filter = mFilterRadius != FilterDialog.FILTER_RADIUS_DISABLED;
         if (filter)
             mFilter.setImageResource(R.mipmap.ic_filter_on);
@@ -125,7 +123,6 @@ public class MapController {
     }
 
     private void addMarkersIfAny(boolean filter) {
-        Log.d(TAG, "addMarkersIfAny");
         mDataSource.open();
         List<MyPlace> places = mDataSource.getAllMyPlaces();
         mDataSource.close();

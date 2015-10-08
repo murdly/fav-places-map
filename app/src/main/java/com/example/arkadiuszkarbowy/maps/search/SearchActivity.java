@@ -1,7 +1,10 @@
 package com.example.arkadiuszkarbowy.maps.search;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -112,9 +115,13 @@ public class SearchActivity extends AppCompatActivity {
         public void onTextChanged(CharSequence query, int start, int before, int count) {
             mAdapter.clear();
             mResultsList.clear();
-            if (!query.toString().isEmpty()) {
-                search(query.toString());
-            }
+            if (isNetworkConnected()) {
+                if (!query.toString().isEmpty())
+                    search(query.toString());
+            } else
+                Toast.makeText(mActivity, getResources().getString(R.string.no_connection), Toast.LENGTH_SHORT)
+                        .show();
+
         }
 
         private void search(String query) {
@@ -133,19 +140,29 @@ public class SearchActivity extends AppCompatActivity {
                 }
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
-                Toast.makeText(mActivity, getResources().getString(R.string.no_connection), Toast.LENGTH_SHORT)
-                        .show();
+
             }
         }
 
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
         }
 
         @Override
         public void afterTextChanged(Editable s) {
         }
     };
+
+    private boolean isNetworkConnected() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo ni = cm.getActiveNetworkInfo();
+        if (ni == null) {
+            // There are no active networks.
+            return false;
+        } else
+            return true;
+    }
 
     private void setUpSearchResults() {
         ListView mResults = (ListView) findViewById(R.id.results);

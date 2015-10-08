@@ -76,7 +76,6 @@ public class MapsActivity extends FragmentActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume");
         mMapController.setUpMapIfNeeded();
         mMapController.invalidateMarkers();
     }
