@@ -2,10 +2,10 @@
     <string name="app_name">Mapy</string>
     <string name="title_activity_maps">Mapy</string>
     <string name="no_connection">Brak połączenia</string>
-    <string name="title_activity_places">Twoje miejsca</string>
+    <string name="your_places">Twoje miejsca</string>
     <string name="action_settings">Settings</string>
     <string name="places_empty">Dodaj miejsce</string>
-    <string name="title_activity_search">SearchActivity</string>
+    <string name="title_activity_route">Ustaw trasę</string>
 
     <string name="search">Wyszukaj miejsce</string>
     <string name="filter_value">Wybierz maksymalną odległość</string>
@@ -25,4 +25,13 @@
         <item>@string/m5000</item>
         <item>@string/world</item>
     </string-array>
+
+    <string name="from">z</string>
+    <string name="through">przez</string>
+    <string name="to">do</string>
+    <string name="lack_of_places">Nie masz wystarczająco miejsc.</string>
+    <string name="validation">Popraw trasę</string>
+    <string name="add_leg">Dodaj odcinek</string>
+    <string name="create_route">Utwórz</string>
+    <string name="close_route">Zamknij trasę</string>
 </resources>

@@ -42,7 +42,6 @@ public class SearchActivity extends AppCompatActivity {
     public static final int REQUEST_SEARCH = 1;
     public static final String NEWLY_ADDED_ID = "newly_added_id";
     private Activity mActivity;
-    private ListView mResults;
     private List<AutocompletePrediction> mResultsList;
     private GoogleApiClient mGoogleApiClient;
     private AutocompleteAdapter mAdapter;
@@ -149,7 +148,7 @@ public class SearchActivity extends AppCompatActivity {
     };
 
     private void setUpSearchResults() {
-        mResults = (ListView) findViewById(R.id.results);
+        ListView mResults = (ListView) findViewById(R.id.results);
         mResults.setOnItemClickListener(mResultClickListener);
 
         mResultsList = new ArrayList<>();

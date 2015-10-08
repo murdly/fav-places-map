@@ -9,18 +9,23 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.example.arkadiuszkarbowy.maps.R;
 import com.example.arkadiuszkarbowy.maps.db.DatabaseManager;
 import com.example.arkadiuszkarbowy.maps.db.SQLiteHelper;
 import com.example.arkadiuszkarbowy.maps.places.PlacesActivity;
+import com.example.arkadiuszkarbowy.maps.route.RouteActivity;
+import com.example.arkadiuszkarbowy.maps.route.RouteLeg;
 import com.example.arkadiuszkarbowy.maps.search.SearchActivity;
 import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
+
+import java.util.ArrayList;
 
 public class MapsActivity extends FragmentActivity {
     private static final String TAG = "MapsActivity";
@@ -32,7 +37,7 @@ public class MapsActivity extends FragmentActivity {
     private Activity mActivity;
 
     private MapController mMapController;
-
+    private Button mCloseRoute;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,11 +47,25 @@ public class MapsActivity extends FragmentActivity {
         mMapController = new MapController(this, DatabaseManager.getInstance());
         buildGoogleApiClient();
         mMapController.initViews();
-        mMapController.setFabListeners(mOnSearchListener, mOnListListener, mOnPathListener);
+        mMapController.setFabListeners(mOnSearchListener, mOnListListener, mOnRouteListener);
 
-        if(savedInstanceState != null)
-             mMapController.setFilterRadius(savedInstanceState.getInt(MapController.FILTER_RADIUS));
+        if (savedInstanceState != null)
+            mMapController.setFilterRadius(savedInstanceState.getInt(MapController.FILTER_RADIUS));
+
+
+        mCloseRoute = (Button) findViewById(R.id.close_route);
+        mCloseRoute.setOnClickListener(mOnCloseRouteListener);
     }
+
+    private View.OnClickListener mOnCloseRouteListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            mMapController.showViews();
+            v.setVisibility(View.GONE);
+            mMapController.cancelRoute();
+            mMapController.invalidateMarkers();
+        }
+    };
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -57,8 +76,9 @@ public class MapsActivity extends FragmentActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        mMapController.invalidateMarkers();
+        Log.d(TAG, "onResume");
         mMapController.setUpMapIfNeeded();
+        mMapController.invalidateMarkers();
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -126,27 +146,39 @@ public class MapsActivity extends FragmentActivity {
         }
     };
 
-    private FloatingActionButton.OnClickListener mOnPathListener = new FloatingActionButton.OnClickListener() {
+    private FloatingActionButton.OnClickListener mOnRouteListener = new FloatingActionButton.OnClickListener() {
         @Override
         public void onClick(View v) {
+            startActivityForResult(new Intent(MapsActivity.this, RouteActivity.class), RouteActivity.REQUEST_ROUTE);
         }
     };
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.d(TAG, "onActivityResult");
         if (requestCode == SearchActivity.REQUEST_SEARCH) {
             if (resultCode == Activity.RESULT_OK) {
                 long id = data.getLongExtra(SearchActivity.NEWLY_ADDED_ID, -1);
                 mMapController.addMarker(id);
             }
         } else if (requestCode == PlacesActivity.REQUEST_PLACES) {
-            if (resultCode == PlacesActivity.RESULT_GOTO_MARKER)
+            if (resultCode == PlacesActivity.RESULT_GOTO_MARKER) {
                 if (data != null) {
                     double lat = data.getDoubleExtra(MapsActivity.LATITUDE, 0d);
                     double lng = data.getDoubleExtra(MapsActivity.LONGITUDE, 0d);
-                    mMapController.moveCamera(new LatLng(lat,lng));
+                    mMapController.moveCamera(new LatLng(lat, lng));
                 }
-
+            }
+        } else if (requestCode == RouteActivity.REQUEST_ROUTE) {
+            if (resultCode == RouteActivity.RESULT_ROUTE_LEGS) {
+                if (data != null) {
+                    Log.d(TAG, "result route legs");
+                    mCloseRoute.setVisibility(View.VISIBLE);
+                    mMapController.hideViews();
+                    ArrayList<RouteLeg> route = data.getParcelableArrayListExtra(RouteActivity.ROUTE_LEGS);
+                    mMapController.drawRoute(route);
+                }
+            }
         }
     }
 }

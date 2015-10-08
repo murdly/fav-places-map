@@ -27,7 +27,8 @@
 
         <activity
             android:name=".map.MapsActivity"
-            android:label="@string/title_activity_maps" >
+            android:label="@string/title_activity_maps"
+            android:screenOrientation="portrait" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -36,13 +37,20 @@
         </activity>
         <activity
             android:name=".places.PlacesActivity"
-            android:label="@string/title_activity_places"
-            android:parentActivityName=".map.MapsActivity">
+            android:label="@string/your_places"
+            android:parentActivityName=".map.MapsActivity"
+            android:screenOrientation="portrait">
+        </activity>
+        <activity
+            android:name=".route.RouteActivity"
+            android:label="@string/title_activity_route"
+            android:parentActivityName=".map.MapsActivity"
+            android:screenOrientation="portrait">
         </activity>
         <activity
             android:name=".search.SearchActivity"
-            android:label="@string/title_activity_search"
-           android:theme="@style/NoActionBar">
+           android:theme="@style/NoActionBar"
+            android:screenOrientation="portrait">
         </activity>
     </application>
 

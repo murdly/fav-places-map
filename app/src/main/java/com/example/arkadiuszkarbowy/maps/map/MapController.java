@@ -3,17 +3,19 @@ package com.example.arkadiuszkarbowy.maps.map;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.location.Address;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.example.arkadiuszkarbowy.maps.R;
 import com.example.arkadiuszkarbowy.maps.db.DatabaseManager;
 import com.example.arkadiuszkarbowy.maps.db.MyPlace;
-import com.example.arkadiuszkarbowy.maps.search.GeocoderTask;
+import com.example.arkadiuszkarbowy.maps.route.RouteLeg;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -21,8 +23,11 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.SphericalUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -38,11 +43,15 @@ public class MapController {
 
     private DatabaseManager mDataSource;
     private GoogleMap mMap;
+    private LinearLayout mFab;
     private FloatingActionButton mSearch, mList, mPath;
     private FloatingActionMenu mMenu;
     private ImageButton mFilter;
     private int mFilterRadius = FilterDialog.FILTER_RADIUS_DISABLED;
+    private Polyline mCurrentRoute;
+    private PolylineOptions mCurrentRouteOptions;
     private FragmentActivity mActivity;
+    private ArrayList<RouteLeg> mRoute;
 
     public MapController(FragmentActivity activity, DatabaseManager dataSource) {
         mActivity = activity;
@@ -50,6 +59,7 @@ public class MapController {
     }
 
     public void initViews() {
+        mFab = (LinearLayout) mActivity.findViewById(R.id.fabs);
         mMenu = (FloatingActionMenu) mActivity.findViewById(R.id.fabMenu);
         mSearch = (FloatingActionButton) mActivity.findViewById(R.id.search);
         mList = (FloatingActionButton) mActivity.findViewById(R.id.list);
@@ -60,7 +70,20 @@ public class MapController {
         setUpMapIfNeeded();
     }
 
+    public void showViews() {
+        mFab.setVisibility(View.VISIBLE);
+        mFilter.setVisibility(View.VISIBLE);
+        mMap.setMyLocationEnabled(true);
+    }
+
+    public void hideViews() {
+        mFab.setVisibility(View.INVISIBLE);
+        mFilter.setVisibility(View.INVISIBLE);
+        mMap.setMyLocationEnabled(false);
+    }
+
     public void setUpMapIfNeeded() {
+        Log.d(TAG, "setUpMapIfNeeded");
         if (mMap == null) {
             mMap = ((SupportMapFragment) mActivity.getSupportFragmentManager().findFragmentById(R.id.map))
                     .getMap();
@@ -76,17 +99,33 @@ public class MapController {
     }
 
     public void invalidateMarkers() {
+        Log.d(TAG, "invalidateMarkers");
         boolean filter = mFilterRadius != FilterDialog.FILTER_RADIUS_DISABLED;
         if (filter)
             mFilter.setImageResource(R.mipmap.ic_filter_on);
-         else
+        else
             mFilter.setImageResource(R.mipmap.ic_filter_outline);
 
-        addMarkersIfAny(filter);
-    }
-    private void addMarkersIfAny(boolean filter) {
 
         mMap.clear();
+        if(!addRouteIfAny())
+            addMarkersIfAny(filter);
+    }
+
+    private boolean addRouteIfAny() {
+        if(mCurrentRouteOptions != null) {
+
+            mCurrentRoute = mMap.addPolyline(mCurrentRouteOptions);
+            for(RouteLeg l : mRoute)
+                mMap.addMarker(l.getPlace().getMarkerOptions());
+            return true;
+        }
+
+        return false;
+    }
+
+    private void addMarkersIfAny(boolean filter) {
+        Log.d(TAG, "addMarkersIfAny");
         mDataSource.open();
         List<MyPlace> places = mDataSource.getAllMyPlaces();
         mDataSource.close();
@@ -145,6 +184,34 @@ public class MapController {
     public void setFilterRadius(int filterRadius) {
         mFilterRadius = filterRadius;
     }
+
+    public void drawRoute(ArrayList<RouteLeg> route) {
+        mRoute = route;
+        ArrayList<LatLng> latlngs = getLatLngs(route);
+        mCurrentRouteOptions = new PolylineOptions()
+                .geodesic(true)
+                .addAll(latlngs)
+                .color(Color.BLUE);
+
+        moveCamera(latlngs.get(0));
+    }
+
+    public void cancelRoute(){
+        if(mCurrentRoute != null) {
+            mCurrentRoute.remove();
+            mCurrentRouteOptions = null;
+        }
+    }
+
+    private ArrayList<LatLng> getLatLngs(ArrayList<RouteLeg> route) {
+        ArrayList<LatLng> latLngs = new ArrayList<>();
+        for (RouteLeg leg : route)
+            latLngs.add(leg.getPlace().getLatLng());
+        return latLngs;
+    }
+
+
+
 
     public class MarkerTitleListener implements GoogleMap.OnMapLongClickListener, MarkerTitleDialog.TitleListener {
         private LatLng latLng;

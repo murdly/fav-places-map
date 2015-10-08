@@ -1,4 +1,4 @@
-package com.example.arkadiuszkarbowy.maps.search;
+package com.example.arkadiuszkarbowy.maps.map;
 
 import android.content.Context;
 import android.location.Address;
