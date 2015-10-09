@@ -31,6 +31,8 @@ public class MapsActivity extends FragmentActivity {
     private static final String TAG = "MapsActivity";
     public static final String LATITUDE = "com.ak.lat";
     public static final String LONGITUDE = "com.ak.lon";
+    public static final double EARTH_CENTER_LATITUDE = 34.513299;
+    public static final double EARTH_CENTER_LONGITUDE = -94.1628807;
 
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;

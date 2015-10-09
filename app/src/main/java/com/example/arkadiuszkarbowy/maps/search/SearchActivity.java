@@ -1,16 +1,12 @@
 package com.example.arkadiuszkarbowy.maps.search;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.os.AsyncTask;
+import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.AdapterView;
@@ -18,83 +14,51 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.example.arkadiuszkarbowy.maps.db.DatabaseManager;
-import com.example.arkadiuszkarbowy.maps.map.MapsActivity;
 import com.example.arkadiuszkarbowy.maps.R;
-import com.google.android.gms.common.ConnectionResult;
+import com.example.arkadiuszkarbowy.maps.map.MapsActivity;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.location.places.AutocompletePrediction;
-import com.google.android.gms.location.places.Place;
-import com.google.android.gms.location.places.PlaceBuffer;
-import com.google.android.gms.location.places.PlaceLikelihoodBuffer;
 import com.google.android.gms.location.places.Places;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Created by arkadiuszkarbowy on 01/10/15.
  */
-public class SearchActivity extends AppCompatActivity {
-    private static final String TAG = "SearchActivity";
+public class SearchActivity extends AppCompatActivity implements SearchView, ListView.OnItemClickListener {
     public static final int REQUEST_SEARCH = 1;
     public static final String NEWLY_ADDED_ID = "newly_added_id";
-    private Activity mActivity;
+
+    private ListView mResultsContainer;
     private List<AutocompletePrediction> mResultsList;
-    private GoogleApiClient mGoogleApiClient;
-    private AutocompleteAdapter mAdapter;
-    private LatLngBounds mBounds;
+    private SearchPresenterImpl mPresenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search);
-        mActivity = this;
 
-        buildGoogleApiClient();
-        getCurrentLocationBounds();
         setUpSearchBox();
-        setUpSearchResults();
+
+        mResultsContainer = (ListView) findViewById(R.id.results);
+        mResultsContainer.setOnItemClickListener(this);
+
+        mPresenter = new SearchPresenterImpl(this);
+        mPresenter.setContext(this);
+        mPresenter.setGoogleApiClient(buildClient());
+
     }
 
-    private synchronized void buildGoogleApiClient() {
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .enableAutoManage(this, 0, mConnectionFailedCallback)
+    private synchronized GoogleApiClient buildClient() {
+        GoogleApiClient client = new GoogleApiClient.Builder(this)
+                .enableAutoManage(this, 0, mPresenter)
                 .addApi(Places.GEO_DATA_API)
                 .addApi(Places.PLACE_DETECTION_API)
                 .build();
-        mGoogleApiClient.connect();
-    }
-
-    private GoogleApiClient.OnConnectionFailedListener mConnectionFailedCallback = new GoogleApiClient
-            .OnConnectionFailedListener() {
-        @Override
-        public void onConnectionFailed(ConnectionResult connectionResult) {
-            Log.d(TAG, "API connection failed");
-            Toast.makeText(mActivity, getResources().getString(R.string.no_connection), Toast.LENGTH_SHORT)
-                    .show();
-        }
-    };
-
-    private void getCurrentLocationBounds() {
-        PendingResult<PlaceLikelihoodBuffer> result = Places.PlaceDetectionApi
-                .getCurrentPlace(mGoogleApiClient, null);
-        result.setResultCallback(new ResultCallback<PlaceLikelihoodBuffer>() {
-            @Override
-            public void onResult(PlaceLikelihoodBuffer likelyPlaces) {
-                mBounds = buildBounds(likelyPlaces.get(0).getPlace().getLatLng());
-                likelyPlaces.release();
-            }
-
-            private LatLngBounds buildBounds(LatLng latLng) {
-                return LatLngBounds.builder().include(latLng).build();
-            }
-        });
+        client.connect();
+        return client;
     }
 
     private void setUpSearchBox() {
@@ -113,35 +77,8 @@ public class SearchActivity extends AppCompatActivity {
     private TextWatcher mTextWatcher = new TextWatcher() {
         @Override
         public void onTextChanged(CharSequence query, int start, int before, int count) {
-            mAdapter.clear();
-            mResultsList.clear();
-            if (isNetworkConnected()) {
-                if (!query.toString().isEmpty())
-                    search(query.toString());
-            } else
-                Toast.makeText(mActivity, getResources().getString(R.string.no_connection), Toast.LENGTH_SHORT)
-                        .show();
-
-        }
-
-        private void search(String query) {
-            try {
-                if (!mGoogleApiClient.isConnected()) {
-                    Log.d(TAG, "API is not connected");
-                } else {
-                    SearchTask search = new SearchTask(mGoogleApiClient);
-                    search.setBounds(mBounds);
-                    AsyncTask<String, Void, List<AutocompletePrediction>> result = search.execute(query);
-
-                    if (result.get() != null)
-                        mResultsList.addAll(result.get());
-
-                    mAdapter.notifyDataSetChanged();
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-
-            }
+            if (!query.toString().isEmpty())
+                mPresenter.onSearchQuery(query.toString(), getLastObtainedLocation());
         }
 
         @Override
@@ -154,60 +91,55 @@ public class SearchActivity extends AppCompatActivity {
         }
     };
 
-    private boolean isNetworkConnected() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo ni = cm.getActiveNetworkInfo();
-        if (ni == null) {
-            // There are no active networks.
-            return false;
-        } else
-            return true;
+    private LatLng getLastObtainedLocation() {
+        SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
+        float lat = sharedPref.getFloat(MapsActivity.LATITUDE, (float) MapsActivity.EARTH_CENTER_LATITUDE);
+        float lon = sharedPref.getFloat(MapsActivity.LONGITUDE, (float) MapsActivity.EARTH_CENTER_LONGITUDE);
+        return new LatLng(lat, lon);
     }
 
-    private void setUpSearchResults() {
-        ListView mResults = (ListView) findViewById(R.id.results);
-        mResults.setOnItemClickListener(mResultClickListener);
-
-        mResultsList = new ArrayList<>();
-        mAdapter = new AutocompleteAdapter(mActivity, mResultsList);
-        mResults.setAdapter(mAdapter);
+    @Override
+    public void showToast(String msg) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT)
+                .show();
     }
 
-    private ListView.OnItemClickListener mResultClickListener = new ListView.OnItemClickListener() {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            final AutocompletePrediction item = mAdapter.getItem(position);
-            final String placeId = item.getPlaceId();
-
-            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi
-                    .getPlaceById(mGoogleApiClient, placeId);
-            placeResult.setResultCallback(mUpdatePlaceDetailsCallback);
+    @Override
+    public void initAdapterIfNecessary() {
+        if (mResultsList == null) {
+            mResultsList = new ArrayList<>();
+            mResultsContainer.setAdapter(new AutocompleteAdapter(this, mResultsList));
         }
-    };
+    }
 
-    private ResultCallback<PlaceBuffer> mUpdatePlaceDetailsCallback
-            = new ResultCallback<PlaceBuffer>() {
-        @Override
-        public void onResult(PlaceBuffer places) {
-            if (!places.getStatus().isSuccess()) {
-                Log.e(TAG, "Place query did not complete. Error: " + places.getStatus().toString());
-                places.release();
-                return;
-            }
-            final Place apiPlace = places.get(0);
+    @Override
+    public void updateResults(List<AutocompletePrediction> results) {
+        mResultsList.clear();
+        mResultsList.addAll(results);
+        ((AutocompleteAdapter) mResultsContainer.getAdapter()).notifyDataSetChanged();
+    }
 
-            DatabaseManager db = DatabaseManager.getInstance();
-            db.open();
-            long id = db.createMyPlaceFrom(apiPlace);
-            db.close();
+    @Override
+    public void hideResultsContainer() {
+        mResultsContainer.setVisibility(View.GONE);
+    }
 
-            Intent markerData = new Intent();
-            markerData.putExtra(NEWLY_ADDED_ID, id);
-            places.release();
+    @Override
+    public void showResultsContainer() {
+        mResultsContainer.setVisibility(View.VISIBLE);
+    }
 
+    @Override
+    public void finishAndGoToChosenPlace(long id) {
+        Intent markerData = new Intent();
+        markerData.putExtra(NEWLY_ADDED_ID, id);
+        setResult(RESULT_OK, markerData);
+        finish();
+    }
 
-            setResult(RESULT_OK, markerData);
-            finish();
-        }
-    };
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        AutocompletePrediction item = (AutocompletePrediction) parent.getItemAtPosition(position);
+        mPresenter.onResultItemClicked(item);
+    }
 }

@@ -38,8 +38,6 @@ public class MapController {
     private static final String TAG = "MapController";
 
     public static final String FILTER_RADIUS = "filter_radius";
-    private static final double EARTH_CENTER_LATITUDE = 34.513299;
-    private static final double EARTH_CENTER_LONGITUDE = -94.1628807;
 
     private DatabaseManager mDataSource;
     private GoogleMap mMap;
@@ -145,8 +143,8 @@ public class MapController {
 
     private LatLng getLastObtainedLocation() {
         SharedPreferences sharedPref = mActivity.getPreferences(Context.MODE_PRIVATE);
-        float lat = sharedPref.getFloat(MapsActivity.LATITUDE, (float) EARTH_CENTER_LATITUDE);
-        float lon = sharedPref.getFloat(MapsActivity.LONGITUDE, (float) EARTH_CENTER_LONGITUDE);
+        float lat = sharedPref.getFloat(MapsActivity.LATITUDE, (float) MapsActivity.EARTH_CENTER_LATITUDE);
+        float lon = sharedPref.getFloat(MapsActivity.LONGITUDE, (float) MapsActivity.EARTH_CENTER_LONGITUDE);
         return new LatLng(lat, lon);
     }
 
