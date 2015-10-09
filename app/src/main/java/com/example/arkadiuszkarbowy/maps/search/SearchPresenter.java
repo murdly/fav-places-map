@@ -12,6 +12,7 @@ import com.google.android.gms.maps.model.LatLng;
 public interface SearchPresenter {
     void setContext(Context context);
     void setGoogleApiClient(GoogleApiClient client);
-    void onSearchQuery(String query, LatLng position);
+    void setSearchBounds();
+    void onSearchQuery(String query);
     void onResultItemClicked(AutocompletePrediction position);
 }

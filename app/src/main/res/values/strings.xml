@@ -34,4 +34,5 @@
     <string name="add_leg">Dodaj odcinek</string>
     <string name="create_route">Utwórz</string>
     <string name="close_route">Zamknij trasę</string>
+    <string name="wrong_query">Błąd zapytania</string>
 </resources>

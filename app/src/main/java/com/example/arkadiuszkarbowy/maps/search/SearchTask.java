@@ -1,8 +1,6 @@
 package com.example.arkadiuszkarbowy.maps.search;
 
-import android.content.Context;
 import android.os.AsyncTask;
-import android.util.Log;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
@@ -20,16 +18,12 @@ import java.util.concurrent.TimeUnit;
  * Created by arkadiuszkarbowy on 30/09/15.
  */
 public class SearchTask extends AsyncTask<String, Void, List<AutocompletePrediction>> {
-    private static final String TAG = "SearchTask";
     private LatLngBounds mBounds;
     private GoogleApiClient mGoogleApiClient;
 
 
-    public SearchTask(GoogleApiClient googleApiClient) {
+    public SearchTask(GoogleApiClient googleApiClient, LatLngBounds bounds) {
         mGoogleApiClient = googleApiClient;
-    }
-
-    public void setBounds(LatLngBounds bounds) {
         mBounds = bounds;
     }
 
@@ -40,7 +34,6 @@ public class SearchTask extends AsyncTask<String, Void, List<AutocompletePredict
 
     private ArrayList<AutocompletePrediction> getAutocomplete(CharSequence query) {
         if (mGoogleApiClient.isConnected()) {
-
             PendingResult<AutocompletePredictionBuffer> results = Places.GeoDataApi
                     .getAutocompletePredictions(mGoogleApiClient, query.toString(),
                             mBounds, null);
@@ -50,14 +43,12 @@ public class SearchTask extends AsyncTask<String, Void, List<AutocompletePredict
 
             final com.google.android.gms.common.api.Status status = autocompletePredictions.getStatus();
             if (!status.isSuccess()) {
-                Log.e(TAG, "error: " + status.toString());
                 autocompletePredictions.release();
                 return null;
             }
 
             return DataBufferUtils.freezeAndClose(autocompletePredictions);
         }
-        Log.e(TAG, "API not connected");
         return null;
     }
 }

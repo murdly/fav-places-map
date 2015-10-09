@@ -1,8 +1,6 @@
 package com.example.arkadiuszkarbowy.maps.search;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
@@ -15,11 +13,9 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.example.arkadiuszkarbowy.maps.R;
-import com.example.arkadiuszkarbowy.maps.map.MapsActivity;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.places.AutocompletePrediction;
 import com.google.android.gms.location.places.Places;
-import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +27,7 @@ public class SearchActivity extends AppCompatActivity implements SearchView, Lis
     public static final int REQUEST_SEARCH = 1;
     public static final String NEWLY_ADDED_ID = "newly_added_id";
 
+    private EditText mSearchBox;
     private ListView mResultsContainer;
     private List<AutocompletePrediction> mResultsList;
     private SearchPresenterImpl mPresenter;
@@ -48,6 +45,7 @@ public class SearchActivity extends AppCompatActivity implements SearchView, Lis
         mPresenter = new SearchPresenterImpl(this);
         mPresenter.setContext(this);
         mPresenter.setGoogleApiClient(buildClient());
+        mPresenter.setSearchBounds();
 
     }
 
@@ -70,7 +68,7 @@ public class SearchActivity extends AppCompatActivity implements SearchView, Lis
         });
 
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-        EditText mSearchBox = (EditText) findViewById(R.id.searchBox);
+        mSearchBox = (EditText) findViewById(R.id.searchBox);
         mSearchBox.addTextChangedListener(mTextWatcher);
     }
 
@@ -78,7 +76,9 @@ public class SearchActivity extends AppCompatActivity implements SearchView, Lis
         @Override
         public void onTextChanged(CharSequence query, int start, int before, int count) {
             if (!query.toString().isEmpty())
-                mPresenter.onSearchQuery(query.toString(), getLastObtainedLocation());
+                mPresenter.onSearchQuery(query.toString());
+            else
+                hideResultsContainer();
         }
 
         @Override
@@ -90,19 +90,6 @@ public class SearchActivity extends AppCompatActivity implements SearchView, Lis
         public void afterTextChanged(Editable s) {
         }
     };
-
-    private LatLng getLastObtainedLocation() {
-        SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
-        float lat = sharedPref.getFloat(MapsActivity.LATITUDE, (float) MapsActivity.EARTH_CENTER_LATITUDE);
-        float lon = sharedPref.getFloat(MapsActivity.LONGITUDE, (float) MapsActivity.EARTH_CENTER_LONGITUDE);
-        return new LatLng(lat, lon);
-    }
-
-    @Override
-    public void showToast(String msg) {
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT)
-                .show();
-    }
 
     @Override
     public void initAdapterIfNecessary() {
@@ -120,6 +107,11 @@ public class SearchActivity extends AppCompatActivity implements SearchView, Lis
     }
 
     @Override
+    public void enableSearch(boolean enabled) {
+        mSearchBox.setEnabled(enabled);
+    }
+
+    @Override
     public void hideResultsContainer() {
         mResultsContainer.setVisibility(View.GONE);
     }
@@ -127,6 +119,12 @@ public class SearchActivity extends AppCompatActivity implements SearchView, Lis
     @Override
     public void showResultsContainer() {
         mResultsContainer.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        AutocompletePrediction item = (AutocompletePrediction) parent.getItemAtPosition(position);
+        mPresenter.onResultItemClicked(item);
     }
 
     @Override
@@ -138,8 +136,8 @@ public class SearchActivity extends AppCompatActivity implements SearchView, Lis
     }
 
     @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        AutocompletePrediction item = (AutocompletePrediction) parent.getItemAtPosition(position);
-        mPresenter.onResultItemClicked(item);
+    public void showToast(String msg) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT)
+                .show();
     }
 }
