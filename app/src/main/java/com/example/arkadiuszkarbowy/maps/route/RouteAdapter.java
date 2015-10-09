@@ -1,8 +1,6 @@
 package com.example.arkadiuszkarbowy.maps.route;
 
-import android.content.Context;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,16 +8,16 @@ import android.widget.TextView;
 
 import com.example.arkadiuszkarbowy.maps.R;
 
+import java.util.ArrayList;
+
 /**
  * Created by arkadiuszkarbowy on 29/09/15.
  */
 public class RouteAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    private Context mContext;
-    private RouteList mRoute;
+    private ArrayList<Leg> mRoute;
     private OnLegListener mRecyclerListener;
 
-    public RouteAdapter(Context context, RouteList route, OnLegListener listener) {
-        mContext = context;
+    public RouteAdapter(ArrayList<Leg> route, OnLegListener listener) {
         mRoute = route;
         mRecyclerListener = listener;
     }
@@ -58,13 +56,13 @@ public class RouteAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder vh, final int position) {
         ViewHolder holder = (ViewHolder) vh;
-        final RouteLeg leg = mRoute.getLegs().get(position);
+        final Leg leg = mRoute.get(position);
         holder.mPrefix.setText(leg.getPrefix());
         holder.mTitle.setText(leg.getTitle());
     }
 
     @Override
     public int getItemCount() {
-        return mRoute.getLegsCount();
+        return mRoute.size();
     }
 }

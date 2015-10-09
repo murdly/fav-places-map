@@ -15,7 +15,7 @@ import android.widget.Toast;
 import com.example.arkadiuszkarbowy.maps.R;
 import com.example.arkadiuszkarbowy.maps.db.DatabaseManager;
 import com.example.arkadiuszkarbowy.maps.db.MyPlace;
-import com.example.arkadiuszkarbowy.maps.route.RouteLeg;
+import com.example.arkadiuszkarbowy.maps.route.Leg;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -49,7 +49,7 @@ public class MapController {
     private Polyline mCurrentRoute;
     private PolylineOptions mCurrentRouteOptions;
     private FragmentActivity mActivity;
-    private ArrayList<RouteLeg> mRoute;
+    private ArrayList<Leg> mRoute;
 
     public MapController(FragmentActivity activity, DatabaseManager dataSource) {
         mActivity = activity;
@@ -112,7 +112,7 @@ public class MapController {
         if(mCurrentRouteOptions != null) {
 
             mCurrentRoute = mMap.addPolyline(mCurrentRouteOptions);
-            for(RouteLeg l : mRoute)
+            for(Leg l : mRoute)
                 mMap.addMarker(l.getPlace().getMarkerOptions());
             return true;
         }
@@ -180,7 +180,7 @@ public class MapController {
         mFilterRadius = filterRadius;
     }
 
-    public void drawRoute(ArrayList<RouteLeg> route) {
+    public void drawRoute(ArrayList<Leg> route) {
         mRoute = route;
         ArrayList<LatLng> latlngs = getLatLngs(route);
         mCurrentRouteOptions = new PolylineOptions()
@@ -198,9 +198,9 @@ public class MapController {
         }
     }
 
-    private ArrayList<LatLng> getLatLngs(ArrayList<RouteLeg> route) {
+    private ArrayList<LatLng> getLatLngs(ArrayList<Leg> route) {
         ArrayList<LatLng> latLngs = new ArrayList<>();
-        for (RouteLeg leg : route)
+        for (Leg leg : route)
             latLngs.add(leg.getPlace().getLatLng());
         return latLngs;
     }

@@ -17,7 +17,7 @@ import com.example.arkadiuszkarbowy.maps.db.DatabaseManager;
 import com.example.arkadiuszkarbowy.maps.db.SQLiteHelper;
 import com.example.arkadiuszkarbowy.maps.places.PlacesActivity;
 import com.example.arkadiuszkarbowy.maps.route.RouteActivity;
-import com.example.arkadiuszkarbowy.maps.route.RouteLeg;
+import com.example.arkadiuszkarbowy.maps.route.Leg;
 import com.example.arkadiuszkarbowy.maps.search.SearchActivity;
 import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.common.ConnectionResult;
@@ -176,7 +176,7 @@ public class MapsActivity extends FragmentActivity {
                     Log.d(TAG, "result route legs");
                     mCloseRoute.setVisibility(View.VISIBLE);
                     mMapController.hideViews();
-                    ArrayList<RouteLeg> route = data.getParcelableArrayListExtra(RouteActivity.ROUTE_LEGS);
+                    ArrayList<Leg> route = data.getParcelableArrayListExtra(RouteActivity.ROUTE_LEGS);
                     mMapController.drawRoute(route);
                 }
             }
