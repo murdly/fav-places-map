@@ -10,6 +10,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.example.arkadiuszkarbowy.maps.R;
@@ -20,9 +22,12 @@ import com.example.arkadiuszkarbowy.maps.route.RouteActivity;
 import com.example.arkadiuszkarbowy.maps.route.Leg;
 import com.example.arkadiuszkarbowy.maps.search.SearchActivity;
 import com.github.clans.fab.FloatingActionButton;
+import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
@@ -38,21 +43,36 @@ public class MapsActivity extends FragmentActivity {
     private Location mLastLocation;
     private Activity mActivity;
 
-    private MapController mMapController;
+    private MapPresenter mMapPresenter;
     private Button mCloseRoute;
+
+    private GoogleMap mMap;
+    private LinearLayout mFab;
+    private FloatingActionButton mSearch, mList, mPath;
+    private FloatingActionMenu mMenu;
+    private ImageButton mFilter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mActivity = this;
         setContentView(R.layout.activity_maps);
+
+        mFab = (LinearLayout) findViewById(R.id.fabs);
+        mMenu = (FloatingActionMenu) findViewById(R.id.fabMenu);
+        mSearch = (FloatingActionButton) findViewById(R.id.search);
+        mList = (FloatingActionButton) findViewById(R.id.list);
+        mPath = (FloatingActionButton) findViewById(R.id.path);
+        mFilter = (ImageButton) findViewById(R.id.filter);
+        mFilter.setOnClickListener(new FilterListener());
+
         DatabaseManager.initializeInstance(new SQLiteHelper(this));
-        mMapController = new MapController(this, DatabaseManager.getInstance());
+        mMapPresenter = new MapPresenterImpl(this, DatabaseManager.getInstance());
         buildGoogleApiClient();
-        mMapController.initViews();
-        mMapController.setFabListeners(mOnSearchListener, mOnListListener, mOnRouteListener);
+        mMapPresenter.setFabListeners(mOnSearchListener, mOnListListener, mOnRouteListener);
 
         if (savedInstanceState != null)
-            mMapController.setFilterRadius(savedInstanceState.getInt(MapController.FILTER_RADIUS));
+            mMapPresenter.setFilterRadius(savedInstanceState.getInt(MapPresenterImpl.FILTER_RADIUS));
 
 
         mCloseRoute = (Button) findViewById(R.id.close_route);
@@ -62,24 +82,39 @@ public class MapsActivity extends FragmentActivity {
     private View.OnClickListener mOnCloseRouteListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            mMapController.showViews();
+            mMapPresenter.showViews();
             v.setVisibility(View.GONE);
-            mMapController.cancelRoute();
-            mMapController.invalidateMarkers();
+            mMapPresenter.cancelRoute();
+            mMapPresenter.invalidateMarkers();
         }
     };
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        outState.putInt(MapController.FILTER_RADIUS, mMapController.getFilterRadius());
+        outState.putInt(MapPresenterImpl.FILTER_RADIUS, mMapPresenter.getFilterRadius());
         super.onSaveInstanceState(outState);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        mMapController.setUpMapIfNeeded();
-        mMapController.invalidateMarkers();
+        setUpMapIfNeeded();
+        mMapPresenter.invalidateMarkers();
+    }
+
+    public void setUpMapIfNeeded() {
+        if (mMap == null) {
+            mMap = ((SupportMapFragment) mActivity.getSupportFragmentManager().findFragmentById(R.id.map))
+                    .getMap();
+            if (mMap != null) setUpMap();
+        }
+    }
+
+    private void setUpMap() {
+        mMap.getUiSettings().setMapToolbarEnabled(false);
+        mMap.getUiSettings().setCompassEnabled(false);
+        mMap.setMyLocationEnabled(true);
+        mMap.setOnMapLongClickListener(new MarkerTitleListener());
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -98,7 +133,7 @@ public class MapsActivity extends FragmentActivity {
             Log.d(TAG, "onConnected");
             obtainLastLocation();
             if (mLastLocation != null) {
-                mMapController.moveCamera(new LatLng(mLastLocation.getLatitude(),
+                mMapPresenter.moveCamera(new LatLng(mLastLocation.getLatitude(),
                         mLastLocation.getLongitude()));
             }
         }
@@ -133,7 +168,7 @@ public class MapsActivity extends FragmentActivity {
     private FloatingActionButton.OnClickListener mOnSearchListener = new FloatingActionButton.OnClickListener() {
         @Override
         public void onClick(View v) {
-            mMapController.closeMenu();
+            mMapPresenter.closeMenu();
             Intent intent = new Intent(MapsActivity.this, SearchActivity.class);
             startActivityForResult(intent, SearchActivity.REQUEST_SEARCH);
         }
@@ -142,7 +177,7 @@ public class MapsActivity extends FragmentActivity {
     private FloatingActionButton.OnClickListener mOnListListener = new FloatingActionButton.OnClickListener() {
         @Override
         public void onClick(View v) {
-            mMapController.closeMenu();
+            mMapPresenter.closeMenu();
             startActivityForResult(new Intent(MapsActivity.this, PlacesActivity.class), PlacesActivity.REQUEST_PLACES);
         }
     };
@@ -160,14 +195,14 @@ public class MapsActivity extends FragmentActivity {
         if (requestCode == SearchActivity.REQUEST_SEARCH) {
             if (resultCode == Activity.RESULT_OK) {
                 long id = data.getLongExtra(SearchActivity.NEWLY_ADDED_ID, -1);
-                mMapController.addMarker(id);
+                mMapPresenter.addMarker(id);
             }
         } else if (requestCode == PlacesActivity.REQUEST_PLACES) {
             if (resultCode == PlacesActivity.RESULT_GOTO_MARKER) {
                 if (data != null) {
                     double lat = data.getDoubleExtra(MapsActivity.LATITUDE, 0d);
                     double lng = data.getDoubleExtra(MapsActivity.LONGITUDE, 0d);
-                    mMapController.moveCamera(new LatLng(lat, lng));
+                    mMapPresenter.moveCamera(new LatLng(lat, lng));
                 }
             }
         } else if (requestCode == RouteActivity.REQUEST_ROUTE) {
@@ -175,9 +210,9 @@ public class MapsActivity extends FragmentActivity {
                 if (data != null) {
                     Log.d(TAG, "result route legs");
                     mCloseRoute.setVisibility(View.VISIBLE);
-                    mMapController.hideViews();
+                    mMapPresenter.hideViews();
                     ArrayList<Leg> route = data.getParcelableArrayListExtra(RouteActivity.ROUTE_LEGS);
-                    mMapController.drawRoute(route);
+                    mMapPresenter.drawRoute(route);
                 }
             }
         }

@@ -34,37 +34,27 @@ import java.util.concurrent.ExecutionException;
 /**
  * Created by arkadiuszkarbowy on 02/10/15.
  */
-public class MapController {
+public class MapPresenterImpl implements MapPresenter {
     private static final String TAG = "MapController";
 
     public static final String FILTER_RADIUS = "filter_radius";
 
     private DatabaseManager mDataSource;
-    private GoogleMap mMap;
-    private LinearLayout mFab;
-    private FloatingActionButton mSearch, mList, mPath;
-    private FloatingActionMenu mMenu;
-    private ImageButton mFilter;
+
     private int mFilterRadius = FilterDialog.FILTER_RADIUS_DISABLED;
     private Polyline mCurrentRoute;
     private PolylineOptions mCurrentRouteOptions;
     private FragmentActivity mActivity;
     private ArrayList<Leg> mRoute;
 
-    public MapController(FragmentActivity activity, DatabaseManager dataSource) {
+    public MapPresenterImpl(FragmentActivity activity, DatabaseManager dataSource) {
         mActivity = activity;
         mDataSource = dataSource;
     }
 
-    public void initViews() {
-        mFab = (LinearLayout) mActivity.findViewById(R.id.fabs);
-        mMenu = (FloatingActionMenu) mActivity.findViewById(R.id.fabMenu);
-        mSearch = (FloatingActionButton) mActivity.findViewById(R.id.search);
-        mList = (FloatingActionButton) mActivity.findViewById(R.id.list);
-        mPath = (FloatingActionButton) mActivity.findViewById(R.id.path);
-        mFilter = (ImageButton) mActivity.findViewById(R.id.filter);
-        mFilter.setOnClickListener(new FilterListener());
 
+    @Override
+    public void onResume() {
         setUpMapIfNeeded();
     }
 
@@ -80,20 +70,7 @@ public class MapController {
         mMap.setMyLocationEnabled(false);
     }
 
-    public void setUpMapIfNeeded() {
-        if (mMap == null) {
-            mMap = ((SupportMapFragment) mActivity.getSupportFragmentManager().findFragmentById(R.id.map))
-                    .getMap();
-            if (mMap != null) setUpMap();
-        }
-    }
 
-    private void setUpMap() {
-        mMap.getUiSettings().setMapToolbarEnabled(false);
-        mMap.getUiSettings().setCompassEnabled(false);
-        mMap.setMyLocationEnabled(true);
-        mMap.setOnMapLongClickListener(new MarkerTitleListener());
-    }
 
     public void invalidateMarkers() {
         boolean filter = mFilterRadius != FilterDialog.FILTER_RADIUS_DISABLED;
@@ -176,9 +153,12 @@ public class MapController {
         return mFilterRadius;
     }
 
+    @Override
     public void setFilterRadius(int filterRadius) {
         mFilterRadius = filterRadius;
     }
+
+
 
     public void drawRoute(ArrayList<Leg> route) {
         mRoute = route;

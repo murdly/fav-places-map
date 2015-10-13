@@ -34,10 +34,8 @@ public class RouteActivity extends AppCompatActivity implements RouteView {
         assert getSupportActionBar() != null;
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        Button mAddLeg = (Button) findViewById(R.id.addLeg);
-        mAddLeg.setOnClickListener(mOnAddLegListener);
-        Button mCreate = (Button) findViewById(R.id.createRoute);
-        mCreate.setOnClickListener(mOnCreateListener);
+        findViewById(R.id.addLeg).setOnClickListener(mOnAddLegListener);
+        findViewById(R.id.createRoute).setOnClickListener(mOnCreateListener);
 
         mRouteListView = (RecyclerView) findViewById(R.id.legs);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
