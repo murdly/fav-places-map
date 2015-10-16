@@ -26,13 +26,17 @@ import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 
-public class MapsActivity extends FragmentActivity {
+public class MapsActivity extends FragmentActivity implements MapView{
     private static final String TAG = "MapsActivity";
     public static final String LATITUDE = "com.ak.lat";
     public static final String LONGITUDE = "com.ak.lon";
@@ -64,12 +68,13 @@ public class MapsActivity extends FragmentActivity {
         mList = (FloatingActionButton) findViewById(R.id.list);
         mPath = (FloatingActionButton) findViewById(R.id.path);
         mFilter = (ImageButton) findViewById(R.id.filter);
-        mFilter.setOnClickListener(new FilterListener());
 
         DatabaseManager.initializeInstance(new SQLiteHelper(this));
-        mMapPresenter = new MapPresenterImpl(this, DatabaseManager.getInstance());
+        mMapPresenter = new MapPresenterImpl(this, this, DatabaseManager.getInstance());
+
         buildGoogleApiClient();
-        mMapPresenter.setFabListeners(mOnSearchListener, mOnListListener, mOnRouteListener);
+        mFilter.setOnClickListener(mMapPresenter.createFilterListener());
+        setFabListeners(mOnSearchListener, mOnListListener, mOnRouteListener);
 
         if (savedInstanceState != null)
             mMapPresenter.setFilterRadius(savedInstanceState.getInt(MapPresenterImpl.FILTER_RADIUS));
@@ -82,29 +87,21 @@ public class MapsActivity extends FragmentActivity {
     private View.OnClickListener mOnCloseRouteListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            mMapPresenter.showViews();
+            mMapPresenter.closeRoutePresentation();
             v.setVisibility(View.GONE);
-            mMapPresenter.cancelRoute();
-            mMapPresenter.invalidateMarkers();
         }
     };
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        outState.putInt(MapPresenterImpl.FILTER_RADIUS, mMapPresenter.getFilterRadius());
-        super.onSaveInstanceState(outState);
+    protected void onResume() {
+        super.onResume();
+        mMapPresenter.onResume();
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        setUpMapIfNeeded();
-        mMapPresenter.invalidateMarkers();
-    }
-
     public void setUpMapIfNeeded() {
         if (mMap == null) {
-            mMap = ((SupportMapFragment) mActivity.getSupportFragmentManager().findFragmentById(R.id.map))
+            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map))
                     .getMap();
             if (mMap != null) setUpMap();
         }
@@ -114,7 +111,47 @@ public class MapsActivity extends FragmentActivity {
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.getUiSettings().setCompassEnabled(false);
         mMap.setMyLocationEnabled(true);
-        mMap.setOnMapLongClickListener(new MarkerTitleListener());
+        mMap.setOnMapLongClickListener(mMapPresenter.createMarkerTitleListener());
+    }
+
+    @Override
+    public void invalidateMarkers() {
+        boolean filter = mMapPresenter.getFilterRadius() != FilterDialog.FILTER_RADIUS_DISABLED;
+        if (filter)
+            mFilter.setImageResource(R.mipmap.ic_filter_on);
+        else
+            mFilter.setImageResource(R.mipmap.ic_filter_outline);
+
+
+        mMap.clear();
+        if(mMapPresenter.isRouteSet())
+            mMapPresenter.applyRoute();
+        else
+            mMapPresenter.applyMarkersIfAny(filter);
+    }
+
+    @Override
+    public void addSingleMarker(MarkerOptions options){
+        mMap.addMarker(options);
+    }
+
+    @Override
+    public Polyline addPath(PolylineOptions options){
+        return mMap.addPolyline(options);
+    }
+
+    @Override
+    public void show(){
+        mFab.setVisibility(View.VISIBLE);
+        mFilter.setVisibility(View.VISIBLE);
+        mMap.setMyLocationEnabled(true);
+    }
+
+    @Override
+    public void hide(){
+        mFab.setVisibility(View.INVISIBLE);
+        mFilter.setVisibility(View.INVISIBLE);
+        mMap.setMyLocationEnabled(false);
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -133,8 +170,7 @@ public class MapsActivity extends FragmentActivity {
             Log.d(TAG, "onConnected");
             obtainLastLocation();
             if (mLastLocation != null) {
-                mMapPresenter.moveCamera(new LatLng(mLastLocation.getLatitude(),
-                        mLastLocation.getLongitude()));
+                moveCamera(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()));
             }
         }
 
@@ -165,10 +201,18 @@ public class MapsActivity extends FragmentActivity {
         }
     };
 
+    private void setFabListeners(FloatingActionButton.OnClickListener mOnSearchListener, FloatingActionButton
+            .OnClickListener mOnListListener, FloatingActionButton.OnClickListener mOnPathListener) {
+
+        mSearch.setOnClickListener(mOnSearchListener);
+        mList.setOnClickListener(mOnListListener);
+        mPath.setOnClickListener(mOnPathListener);
+    }
+
     private FloatingActionButton.OnClickListener mOnSearchListener = new FloatingActionButton.OnClickListener() {
         @Override
         public void onClick(View v) {
-            mMapPresenter.closeMenu();
+            closeMenu();
             Intent intent = new Intent(MapsActivity.this, SearchActivity.class);
             startActivityForResult(intent, SearchActivity.REQUEST_SEARCH);
         }
@@ -177,7 +221,7 @@ public class MapsActivity extends FragmentActivity {
     private FloatingActionButton.OnClickListener mOnListListener = new FloatingActionButton.OnClickListener() {
         @Override
         public void onClick(View v) {
-            mMapPresenter.closeMenu();
+            closeMenu();
             startActivityForResult(new Intent(MapsActivity.this, PlacesActivity.class), PlacesActivity.REQUEST_PLACES);
         }
     };
@@ -189,32 +233,45 @@ public class MapsActivity extends FragmentActivity {
         }
     };
 
+    private void closeMenu(){
+        mMenu.close(true);
+    }
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.d(TAG, "onActivityResult");
         if (requestCode == SearchActivity.REQUEST_SEARCH) {
             if (resultCode == Activity.RESULT_OK) {
                 long id = data.getLongExtra(SearchActivity.NEWLY_ADDED_ID, -1);
-                mMapPresenter.addMarker(id);
+                LatLng position = mMapPresenter.saveMarker(id);
+                moveCamera(position);
             }
         } else if (requestCode == PlacesActivity.REQUEST_PLACES) {
             if (resultCode == PlacesActivity.RESULT_GOTO_MARKER) {
                 if (data != null) {
                     double lat = data.getDoubleExtra(MapsActivity.LATITUDE, 0d);
                     double lng = data.getDoubleExtra(MapsActivity.LONGITUDE, 0d);
-                    mMapPresenter.moveCamera(new LatLng(lat, lng));
+                    moveCamera(new LatLng(lat, lng));
                 }
             }
         } else if (requestCode == RouteActivity.REQUEST_ROUTE) {
             if (resultCode == RouteActivity.RESULT_ROUTE_LEGS) {
                 if (data != null) {
-                    Log.d(TAG, "result route legs");
                     mCloseRoute.setVisibility(View.VISIBLE);
-                    mMapPresenter.hideViews();
                     ArrayList<Leg> route = data.getParcelableArrayListExtra(RouteActivity.ROUTE_LEGS);
-                    mMapPresenter.drawRoute(route);
+                    LatLng position = mMapPresenter.setUpRoute(route);
+                    moveCamera(position);
                 }
             }
         }
+    }
+
+    private void moveCamera(LatLng latlng) {
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latlng, 15f));
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putInt(MapPresenterImpl.FILTER_RADIUS, mMapPresenter.getFilterRadius());
+        super.onSaveInstanceState(outState);
     }
 }

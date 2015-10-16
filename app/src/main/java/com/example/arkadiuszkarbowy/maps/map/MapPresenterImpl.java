@@ -36,74 +36,68 @@ import java.util.concurrent.ExecutionException;
  */
 public class MapPresenterImpl implements MapPresenter {
     private static final String TAG = "MapController";
-
     public static final String FILTER_RADIUS = "filter_radius";
 
     private DatabaseManager mDataSource;
-
     private int mFilterRadius = FilterDialog.FILTER_RADIUS_DISABLED;
     private Polyline mCurrentRoute;
     private PolylineOptions mCurrentRouteOptions;
     private FragmentActivity mActivity;
+    private MapView mView;
     private ArrayList<Leg> mRoute;
 
-    public MapPresenterImpl(FragmentActivity activity, DatabaseManager dataSource) {
+    public MapPresenterImpl(MapView view, FragmentActivity activity, DatabaseManager dataSource) {
+        mView = view;
         mActivity = activity;
         mDataSource = dataSource;
     }
 
-
     @Override
     public void onResume() {
-        setUpMapIfNeeded();
+        mView.setUpMapIfNeeded();
+        mView.invalidateMarkers();
     }
 
-    public void showViews() {
-        mFab.setVisibility(View.VISIBLE);
-        mFilter.setVisibility(View.VISIBLE);
-        mMap.setMyLocationEnabled(true);
+    @Override
+    public boolean isRouteSet(){
+        return mCurrentRouteOptions != null;
     }
 
-    public void hideViews() {
-        mFab.setVisibility(View.INVISIBLE);
-        mFilter.setVisibility(View.INVISIBLE);
-        mMap.setMyLocationEnabled(false);
+    @Override
+    public LatLng setUpRoute(ArrayList<Leg> route) {
+        mView.hide();
+        mRoute = route;
+        ArrayList<LatLng> latlngs = getLatLngs(route);
+        mCurrentRouteOptions = new PolylineOptions()
+                .geodesic(true)
+                .addAll(latlngs)
+                .color(Color.BLUE);
+
+        return latlngs.get(0);
     }
 
-
-
-    public void invalidateMarkers() {
-        boolean filter = mFilterRadius != FilterDialog.FILTER_RADIUS_DISABLED;
-        if (filter)
-            mFilter.setImageResource(R.mipmap.ic_filter_on);
-        else
-            mFilter.setImageResource(R.mipmap.ic_filter_outline);
-
-
-        mMap.clear();
-        if(!addRouteIfAny())
-            addMarkersIfAny(filter);
+    private ArrayList<LatLng> getLatLngs(ArrayList<Leg> route) {
+        ArrayList<LatLng> latLngs = new ArrayList<>();
+        for (Leg leg : route)
+            latLngs.add(leg.getPlace().getLatLng());
+        return latLngs;
     }
 
-    private boolean addRouteIfAny() {
-        if(mCurrentRouteOptions != null) {
-
-            mCurrentRoute = mMap.addPolyline(mCurrentRouteOptions);
+    @Override
+    public void applyRoute() {
+            mCurrentRoute = mView.addPath(mCurrentRouteOptions);
             for(Leg l : mRoute)
-                mMap.addMarker(l.getPlace().getMarkerOptions());
-            return true;
-        }
-
-        return false;
+                mView.addSingleMarker(l.getPlace().getMarkerOptions());
     }
 
-    private void addMarkersIfAny(boolean filter) {
+    @Override
+    public void applyMarkersIfAny(boolean filter) {
         mDataSource.open();
         List<MyPlace> places = mDataSource.getAllMyPlaces();
         mDataSource.close();
         for (MyPlace p : places) {
             if (filter && outOfBounds(p.getLatLng())) continue;
-            mMap.addMarker(p.getMarkerOptions());
+            mView.addSingleMarker(p.getMarkerOptions());
         }
     }
 
@@ -125,30 +119,30 @@ public class MapPresenterImpl implements MapPresenter {
         return new LatLng(lat, lon);
     }
 
-    public void closeMenu() {
-        mMenu.close(true);
-    }
-
-    public void setFabListeners(FloatingActionButton.OnClickListener mOnSearchListener, FloatingActionButton
-            .OnClickListener mOnListListener, FloatingActionButton.OnClickListener mOnPathListener) {
-
-        mSearch.setOnClickListener(mOnSearchListener);
-        mList.setOnClickListener(mOnListListener);
-        mPath.setOnClickListener(mOnPathListener);
-    }
-
-    public void moveCamera(LatLng latlng) {
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latlng, 15f));
-    }
-
-    public void addMarker(long id) {
+    @Override
+    public LatLng saveMarker(long id) {
         mDataSource.open();
         MyPlace place = mDataSource.getMyPlaceById(id);
         mDataSource.close();
-        mMap.addMarker(place.getMarkerOptions());
-        moveCamera(place.getLatLng());
+        mView.addSingleMarker(place.getMarkerOptions());
+        return place.getLatLng();
     }
 
+    @Override
+    public void closeRoutePresentation(){
+        mView.show();
+        cancelRoute();
+        mView.invalidateMarkers();
+    }
+
+    private void cancelRoute(){
+        if(mCurrentRoute != null) {
+            mCurrentRoute.remove();
+            mCurrentRouteOptions = null;
+        }
+    }
+
+    @Override
     public int getFilterRadius() {
         return mFilterRadius;
     }
@@ -159,34 +153,15 @@ public class MapPresenterImpl implements MapPresenter {
     }
 
 
-
-    public void drawRoute(ArrayList<Leg> route) {
-        mRoute = route;
-        ArrayList<LatLng> latlngs = getLatLngs(route);
-        mCurrentRouteOptions = new PolylineOptions()
-                .geodesic(true)
-                .addAll(latlngs)
-                .color(Color.BLUE);
-
-        moveCamera(latlngs.get(0));
+    @Override
+    public MarkerTitleListener createMarkerTitleListener(){
+        return new MarkerTitleListener();
     }
 
-    public void cancelRoute(){
-        if(mCurrentRoute != null) {
-            mCurrentRoute.remove();
-            mCurrentRouteOptions = null;
-        }
+    @Override
+    public FilterListener createFilterListener() {
+        return new FilterListener();
     }
-
-    private ArrayList<LatLng> getLatLngs(ArrayList<Leg> route) {
-        ArrayList<LatLng> latLngs = new ArrayList<>();
-        for (Leg leg : route)
-            latLngs.add(leg.getPlace().getLatLng());
-        return latLngs;
-    }
-
-
-
 
     public class MarkerTitleListener implements GoogleMap.OnMapLongClickListener, MarkerTitleDialog.TitleListener {
         private LatLng latLng;
@@ -205,7 +180,7 @@ public class MapPresenterImpl implements MapPresenter {
                 mDataSource.open();
                 long id = mDataSource.createMyPlaceFrom(result.get(0), title);
                 mDataSource.close();
-                addMarker(id);
+                saveMarker(id);
             } catch (InterruptedException | ExecutionException e) {
                 Log.e(TAG, e.toString());
                 Toast.makeText(mActivity, mActivity.getResources().getString(R.string.smh_wrong), Toast
@@ -231,7 +206,7 @@ public class MapPresenterImpl implements MapPresenter {
                 else if (filter.equals(mActivity.getString(R.string.world)))
                     mFilterRadius = FilterDialog.FILTER_RADIUS_DISABLED;
 
-                invalidateMarkers();
+                mView.invalidateMarkers();
             }
         };
 
