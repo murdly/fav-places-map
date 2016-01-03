@@ -4,26 +4,8 @@ An app that allows user to add his favourite place directly on the map or search
 
 ### Used ###
 
-* Google Maps Api
-* Google Places Api
+* [Google Maps Api](https://developers.google.com/maps/)
+* [Google Places Api](https://developers.google.com/places/)
 * [Floating Action Button Library](https://github.com/Clans/FloatingActionButton)
 
-### How do I get set up? ###
-
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
-
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
+### Screenshots ###
