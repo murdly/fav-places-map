@@ -43,6 +43,7 @@ public class PlacesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
         public EmptyViewHolder(View v, OnRecyclerInteraction listener) {
             super(v);
+            //todo must be set in onBindViewHolder!
             mListener = listener;
             v.setOnClickListener(this);
         }
@@ -62,6 +63,7 @@ public class PlacesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
         public ViewHolder(View v, OnRecyclerInteraction listener) {
             super(v);
+            //todo must be set in onBindViewHolder!
             v.setOnClickListener(this);
             mListener = listener;
             mTitle = (TextView) v.findViewById(R.id.title);

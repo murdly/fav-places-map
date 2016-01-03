@@ -1,12 +1,12 @@
 package com.example.arkadiuszkarbowy.maps.map;
 
 import android.app.Activity;
-import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.location.Address;
 import android.location.Location;
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -14,12 +14,14 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import com.example.arkadiuszkarbowy.maps.FavMapApplication;
+import com.example.arkadiuszkarbowy.maps.FavMapPreferences;
 import com.example.arkadiuszkarbowy.maps.R;
 import com.example.arkadiuszkarbowy.maps.db.DatabaseManager;
 import com.example.arkadiuszkarbowy.maps.db.SQLiteHelper;
 import com.example.arkadiuszkarbowy.maps.places.PlacesActivity;
-import com.example.arkadiuszkarbowy.maps.route.RouteActivity;
 import com.example.arkadiuszkarbowy.maps.route.Leg;
+import com.example.arkadiuszkarbowy.maps.route.RouteActivity;
 import com.example.arkadiuszkarbowy.maps.search.SearchActivity;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
@@ -35,13 +37,11 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
-public class MapsActivity extends FragmentActivity implements MapView{
+public class MapsActivity extends FragmentActivity implements MapView {
     private static final String TAG = "MapsActivity";
-    public static final String LATITUDE = "com.ak.lat";
-    public static final String LONGITUDE = "com.ak.lon";
-    public static final double EARTH_CENTER_LATITUDE = 34.513299;
-    public static final double EARTH_CENTER_LONGITUDE = -94.1628807;
 
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
@@ -70,7 +70,7 @@ public class MapsActivity extends FragmentActivity implements MapView{
         mFilter = (ImageButton) findViewById(R.id.filter);
 
         DatabaseManager.initializeInstance(new SQLiteHelper(this));
-        mMapPresenter = new MapPresenterImpl(this, this, DatabaseManager.getInstance());
+        mMapPresenter = new MapPresenterImpl(this, DatabaseManager.getInstance());
 
         buildGoogleApiClient();
         mFilter.setOnClickListener(mMapPresenter.createFilterListener());
@@ -111,12 +111,12 @@ public class MapsActivity extends FragmentActivity implements MapView{
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.getUiSettings().setCompassEnabled(false);
         mMap.setMyLocationEnabled(true);
-        mMap.setOnMapLongClickListener(mMapPresenter.createMarkerTitleListener());
+        mMap.setOnMapLongClickListener(new MarkerTitleListener());
     }
 
     @Override
     public void invalidateMarkers() {
-        boolean filter = mMapPresenter.getFilterRadius() != FilterDialog.FILTER_RADIUS_DISABLED;
+        boolean filter = mMapPresenter.getFilterRadius() != FilterEnum.RADIUS_DISABLED;
         if (filter)
             mFilter.setImageResource(R.mipmap.ic_filter_on);
         else
@@ -124,31 +124,31 @@ public class MapsActivity extends FragmentActivity implements MapView{
 
 
         mMap.clear();
-        if(mMapPresenter.isRouteSet())
+        if (mMapPresenter.isRouteSet())
             mMapPresenter.applyRoute();
         else
             mMapPresenter.applyMarkersIfAny(filter);
     }
 
     @Override
-    public void addSingleMarker(MarkerOptions options){
+    public void addSingleMarker(MarkerOptions options) {
         mMap.addMarker(options);
     }
 
     @Override
-    public Polyline addPath(PolylineOptions options){
+    public Polyline addPath(PolylineOptions options) {
         return mMap.addPolyline(options);
     }
 
     @Override
-    public void show(){
+    public void show() {
         mFab.setVisibility(View.VISIBLE);
         mFilter.setVisibility(View.VISIBLE);
         mMap.setMyLocationEnabled(true);
     }
 
     @Override
-    public void hide(){
+    public void hide() {
         mFab.setVisibility(View.INVISIBLE);
         mFilter.setVisibility(View.INVISIBLE);
         mMap.setMyLocationEnabled(false);
@@ -167,7 +167,6 @@ public class MapsActivity extends FragmentActivity implements MapView{
     private GoogleApiClient.ConnectionCallbacks mConnectionCallbacks = new GoogleApiClient.ConnectionCallbacks() {
         @Override
         public void onConnected(Bundle bundle) {
-            Log.d(TAG, "onConnected");
             obtainLastLocation();
             if (mLastLocation != null) {
                 moveCamera(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()));
@@ -176,7 +175,6 @@ public class MapsActivity extends FragmentActivity implements MapView{
 
         @Override
         public void onConnectionSuspended(int i) {
-            Log.d(TAG, "onConnected suspended");
             Toast.makeText(mActivity, getResources().getString(R.string.no_connection), Toast.LENGTH_SHORT).show();
         }
     };
@@ -185,11 +183,10 @@ public class MapsActivity extends FragmentActivity implements MapView{
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
                 mGoogleApiClient);
 
-        SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putFloat(LATITUDE, (float) mLastLocation.getLatitude());
-        editor.putFloat(LONGITUDE, (float) mLastLocation.getLongitude());
-        editor.commit();
+        if (mLastLocation != null) {
+            FavMapApplication.getInstance().getPreferences().putLat(mLastLocation.getLatitude());
+            FavMapApplication.getInstance().getPreferences().putLon(mLastLocation.getLongitude());
+        }
     }
 
     private GoogleApiClient.OnConnectionFailedListener mConnectionFailedCallback = new GoogleApiClient
@@ -233,35 +230,80 @@ public class MapsActivity extends FragmentActivity implements MapView{
         }
     };
 
-    private void closeMenu(){
+    private void closeMenu() {
         mMenu.close(true);
+    }
+
+    public void showMarkerDialog(MarkerTitleListener markerTitleListener) {
+        MarkerTitleDialog.newInstance(markerTitleListener).show(getFragmentManager(),
+                getResources().getString(R.string.set_name));
+    }
+
+    public class MarkerTitleListener implements GoogleMap.OnMapLongClickListener, MarkerTitleDialog.TitleListener {
+        private LatLng latLng;
+
+        @Override
+        public void onMapLongClick(LatLng latLng) {
+            this.latLng = latLng;
+            showMarkerDialog(this);
+        }
+
+        @Override
+        public void onResult(String title) {
+            try {
+                List<Address> result = new GeocoderTask(mActivity).execute(latLng).get();
+                mMapPresenter.createPlace(result.get(0), title);
+            } catch (InterruptedException | ExecutionException e) {
+                Toast.makeText(mActivity, mActivity.getResources().getString(R.string.smh_wrong), Toast
+                        .LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
+    public void showFilterDialog(DialogInterface.OnClickListener mFilterListener) {
+        FilterDialog.newInstance(mFilterListener).show(getFragmentManager(), getString(R.string.filter_value));
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == SearchActivity.REQUEST_SEARCH) {
             if (resultCode == Activity.RESULT_OK) {
-                long id = data.getLongExtra(SearchActivity.NEWLY_ADDED_ID, -1);
-                LatLng position = mMapPresenter.saveMarker(id);
-                moveCamera(position);
+                saveMarker(data);
             }
         } else if (requestCode == PlacesActivity.REQUEST_PLACES) {
             if (resultCode == PlacesActivity.RESULT_GOTO_MARKER) {
-                if (data != null) {
-                    double lat = data.getDoubleExtra(MapsActivity.LATITUDE, 0d);
-                    double lng = data.getDoubleExtra(MapsActivity.LONGITUDE, 0d);
-                    moveCamera(new LatLng(lat, lng));
-                }
+                goToMarker(data);
             }
         } else if (requestCode == RouteActivity.REQUEST_ROUTE) {
             if (resultCode == RouteActivity.RESULT_ROUTE_LEGS) {
-                if (data != null) {
-                    mCloseRoute.setVisibility(View.VISIBLE);
-                    ArrayList<Leg> route = data.getParcelableArrayListExtra(RouteActivity.ROUTE_LEGS);
-                    LatLng position = mMapPresenter.setUpRoute(route);
-                    moveCamera(position);
-                }
+                showRoute(data);
             }
+        }
+    }
+
+    private void saveMarker(Intent data) {
+        if (data != null) {
+            long id = data.getLongExtra(SearchActivity.NEWLY_ADDED_ID, -1);
+            LatLng position = mMapPresenter.saveMarker(id);
+            moveCamera(position);
+        }
+    }
+
+    private void goToMarker(Intent data) {
+        if (data != null) {
+            double lat = data.getDoubleExtra(FavMapPreferences.LATITUDE, 0d);
+            double lng = data.getDoubleExtra(FavMapPreferences.LONGITUDE, 0d);
+            moveCamera(new LatLng(lat, lng));
+        }
+    }
+
+    private void showRoute(Intent data) {
+        if (data != null) {
+            mCloseRoute.setVisibility(View.VISIBLE);
+            ArrayList<Leg> route = data.getParcelableArrayListExtra(RouteActivity.ROUTE_LEGS);
+            LatLng position = mMapPresenter.setUpRoute(route);
+            moveCamera(position);
         }
     }
 
@@ -271,7 +313,7 @@ public class MapsActivity extends FragmentActivity implements MapView{
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        outState.putInt(MapPresenterImpl.FILTER_RADIUS, mMapPresenter.getFilterRadius());
+        outState.putInt(MapPresenterImpl.FILTER_RADIUS, mMapPresenter.getFilterRadius().position);
         super.onSaveInstanceState(outState);
     }
 }

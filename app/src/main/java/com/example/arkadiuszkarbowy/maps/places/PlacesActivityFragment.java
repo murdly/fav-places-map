@@ -1,15 +1,15 @@
 package com.example.arkadiuszkarbowy.maps.places;
 
 import android.content.Intent;
-import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.example.arkadiuszkarbowy.maps.map.MapsActivity;
+import com.example.arkadiuszkarbowy.maps.FavMapPreferences;
 import com.example.arkadiuszkarbowy.maps.R;
 import com.example.arkadiuszkarbowy.maps.db.MyPlace;
 import com.example.arkadiuszkarbowy.maps.search.SearchActivity;
@@ -38,6 +38,7 @@ public class PlacesActivityFragment extends Fragment implements PlacesView,
 
     @Override
     public void setItems(List<MyPlace> places) {
+        //todo set adapter only once
         mRecycler.setAdapter(new PlacesAdapter(places, this));
     }
 
@@ -51,8 +52,8 @@ public class PlacesActivityFragment extends Fragment implements PlacesView,
     public void moveToPlaceMarker(int position) {
         MyPlace place = ((PlacesAdapter) mRecycler.getAdapter()).getItemAt(position);
         Intent data = new Intent();
-        data.putExtra(MapsActivity.LATITUDE, place.getLatitude());
-        data.putExtra(MapsActivity.LONGITUDE, place.getLongitude());
+        data.putExtra(FavMapPreferences.LATITUDE, place.getLatitude());
+        data.putExtra(FavMapPreferences.LONGITUDE, place.getLongitude());
         getActivity().setResult(PlacesActivity.RESULT_GOTO_MARKER, data);
         getActivity().finish();
     }

@@ -1,5 +1,7 @@
 package com.example.arkadiuszkarbowy.maps.map;
 
+import android.location.Address;
+
 import com.example.arkadiuszkarbowy.maps.route.Leg;
 import com.google.android.gms.maps.model.LatLng;
 
@@ -17,7 +19,8 @@ public interface MapPresenter {
     LatLng saveMarker(long id);
     void closeRoutePresentation();
     void setFilterRadius(int radius);
-    int getFilterRadius();
-    MapPresenterImpl.MarkerTitleListener createMarkerTitleListener();
+    FilterEnum getFilterRadius();
     MapPresenterImpl.FilterListener createFilterListener();
+
+    void createPlace(Address address, String title);
 }
