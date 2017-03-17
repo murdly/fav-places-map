@@ -10,7 +10,7 @@ An app that allows user to add his favourite place directly on the map or by usi
 
 ### Screenshots ###
 <p align="center">
-<img src="images/2087629762-phpJQO8lbAM..jpg" width="250"/>
+<img src="images/2087629762-phpJQO8lbAM.jpg" width="250"/>
 <img src="images/690323646-php52XuZwAM.jpg" width="250"/>
 <img src="images/1526993596-phpjPj5H7AM.jpg" width="250"/>
 <img src="images/2513389188-phpHrVoj9AM.jpg" width="250"/>
